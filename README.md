@@ -60,7 +60,6 @@ To start Karlík, just type:
 
     # ./karlik
 
-
 Acknowledgements
 ----------------
 I'd like to give a nod to the best book on programming ever written anywhere
@@ -69,3 +68,13 @@ in the multiverse
   * Markéta Synovcová: Martina si hraje spočítačem, 107 programů pro robota
     Karla, 1989 (Martina plays with the computer, 107 programs for Karel the
     Robot)
+
+Maintainance notes
+------------------
+To check ccstyle type
+
+    $ make ccheck
+
+This requires the `ccheck` tool from the [Sycek project][1]
+
+[1]: https://github.com/jxsvoboda/sycek

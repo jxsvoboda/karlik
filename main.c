@@ -133,7 +133,8 @@ static int mapedit_save(mapedit_t *mapedit)
 
 	return 0;
 }
-/*
+
+#if 0
 static void button_press_left_create(mapedit_t *mapedit, int x, int y)
 {
 	uint8_t tx, ty;
@@ -164,7 +165,8 @@ static void button_press_left(mapedit_t *mapedit, int x, int y)
 		button_press_left_delete(mapedit, x, y);
 	}
 }
-*/
+#endif
+
 static void key_press(mapedit_t *mapedit, SDL_Scancode scancode)
 {
 	switch (scancode) {
