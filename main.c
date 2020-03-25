@@ -64,7 +64,7 @@ typedef struct {
 	map_t *map;
 	/** Selected action */
 	ed_action_t action;
-	/** Main menu */
+	/** Map editor toolbar */
 	toolbar_t *map_tb;
 	/** @c true to quit */
 	bool quit;
@@ -207,15 +207,15 @@ static void mapedit_event(mapedit_t *mapedit, SDL_Event *e, gfx_t *gfx)
 	}
 }
 
-/** Main toolbar callback.
+/** Map toolbar callback.
  *
  * @param arg Map editor (mapedit_t *)
  * @param idx Index of the selected entry
  */
-static void mapedit_main_cb(void *arg, int idx)
+static void mapedit_map_toolbar_cb(void *arg, int idx)
 {
 	mapedit_t *mapedit = (mapedit_t *)arg;
-	printf("mapedit_main(%d)\n", idx);
+	printf("mapedit_map_toolbar_cb(%d)\n", idx);
 
 	switch (idx) {
 	case 0:
@@ -247,17 +247,15 @@ int main(void)
 	}
 
 	toolbar_set_origin(mapedit.map_tb, 8, 8);
-	toolbar_set_cb(mapedit.map_tb, mapedit_main_cb, &mapedit);
+	toolbar_set_cb(mapedit.map_tb, mapedit_map_toolbar_cb, &mapedit);
 
 	rc = map_create(8, 8, &mapedit.map);
 	if (rc != 0)
 		return 1;
 
-	mapedit.map->orig_y = 50;
-	mapedit.map->tile_w = 32;
-	mapedit.map->tile_h = 32;
-	mapedit.map->margin_x = 4;
-	mapedit.map->margin_y = 4;
+	map_set_orig(mapedit.map, 0, 50);
+	map_set_tile_size(mapedit.map, 32, 32);
+	map_set_tile_margins(mapedit.map, 4, 4);
 
 	rc = gfx_init(&gfx);
 	if (rc != 0)

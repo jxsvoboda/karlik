@@ -95,6 +95,28 @@ void map_set_orig(map_t *map, int x, int y)
 	map->orig_y = y;
 }
 
+/** Set map tile size.
+ *
+ * @param w Tile width
+ * @param h Tile height
+ */
+void map_set_tile_size(map_t *map, int w, int h)
+{
+	map->tile_w = w;
+	map->tile_h = h;
+}
+
+/** Set map tile margins.
+ *
+ * @param x Horizontal margin
+ * @param y Vertical margin
+ */
+void map_set_tile_margins(map_t *map, int x, int y)
+{
+	map->margin_x = x;
+	map->margin_y = y;
+}
+
 /** Set map callback.
  *
  * @param map Map

@@ -60,6 +60,10 @@ typedef struct {
 
 extern int map_create(int, int, map_t **);
 extern void map_destroy(map_t *);
+extern void map_set_orig(map_t *, int, int);
+extern void map_set_tile_size(map_t *, int, int);
+extern void map_set_tile_margins(map_t *, int, int);
+extern void map_set_cb(map_t *, map_cb_t, void *);
 extern int map_load(FILE *, map_t **);
 extern int map_save(map_t *, FILE *);
 extern void map_draw(map_t *, gfx_t *);
