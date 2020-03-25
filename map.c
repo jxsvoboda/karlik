@@ -204,7 +204,8 @@ void map_draw(map_t *map, gfx_t *gfx)
 
 			ttype = map->tile[x][y];
 
-			SDL_BlitScaled(map->image[ttype], NULL, surf, &drect);
+			if (ttype < map->nimages)
+				SDL_BlitScaled(map->image[ttype], NULL, surf, &drect);
 		}
 	}
 }
@@ -248,9 +249,47 @@ bool map_event(map_t *map, SDL_Event *event)
 	return false;
 }
 
+/** Load map from file.
+ *
+ * @param f File
+ * @param rmap Place to store pointer to new map
+ * @return Zero on success or an error code
+ */
 int map_load(FILE *f, map_t **rmap)
 {
-	return ENOTSUP;
+	map_t *map;
+	int x, y;
+	int w, h;
+	int nitem;
+	int tile;
+	int rc;
+
+	nitem = fscanf(f, "%d %d\n\n", &w, &h);
+	if (nitem != 2)
+		return EIO;
+
+	rc = map_create(w, h, &map);
+	if (rc != 0)
+		return rc;
+
+	for (y = 0; y < map->height; y++) {
+		for (x = 0; x < map->width; x++) {
+			nitem = fscanf(f, "%d", &tile);
+			if (nitem != 1)
+				goto error;
+
+			if (tile < 0 || tile > mapt_robot)
+				goto error;
+
+			map->tile[x][y] = (map_tile_t) tile;
+		}
+	}
+
+	*rmap = map;
+	return 0;
+error:
+	map_destroy(map);
+	return EIO;
 }
 
 /** Save map to file.
@@ -260,5 +299,21 @@ int map_load(FILE *f, map_t **rmap)
  */
 int map_save(map_t *map, FILE *f)
 {
+	int x, y;
+	int rv;
+
+	rv = fprintf(f, "%d %d\n\n", map->width, map->height);
+	if (rv < 0)
+		return EIO;
+
+	for (y = 0; y < map->height; y++) {
+		for (x = 0; x < map->width; x++) {
+			rv = fprintf(f, "%d%c", map->tile[x][y],
+			    x < map->width - 1 ? ' ' : '\n');
+			if (rv < 0)
+				return EIO;
+		}
+	}
+
 	return 0;
 }

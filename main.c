@@ -74,6 +74,8 @@ typedef struct {
 	gfx_t *gfx;
 } mapedit_t;
 
+static int mapedit_map_setup(mapedit_t *);
+
 /** Display Map editor.
  *
  * @param mapedit Map editor
@@ -84,6 +86,22 @@ static void mapedit_display(mapedit_t *mapedit, gfx_t *gfx)
 	gfx_clear(gfx);
 	map_draw(mapedit->map, gfx);
 	toolbar_draw(mapedit->map_tb, gfx);
+}
+
+/** Create new, empty map.
+ *
+ * @param mapedit Map editor
+ * @return Zero on success or an error code
+ */
+static int mapedit_new(mapedit_t *mapedit)
+{
+	int rc;
+
+	rc = map_create(8, 8, &mapedit->map);
+	if (rc != 0)
+		return rc;
+
+	return mapedit_map_setup(mapedit);
 }
 
 /** Load project.
@@ -104,6 +122,13 @@ static int mapedit_load(mapedit_t *mapedit)
 		printf("Error loading map.\n");
 		fclose(f);
 		return EIO;
+	}
+
+	rc = mapedit_map_setup(mapedit);
+	if (rc != 0) {
+		map_destroy(mapedit->map);
+		mapedit->map = NULL;
+		return rc;
 	}
 
 	(void) fclose(f);
@@ -228,6 +253,20 @@ static void mapedit_map_cb(void *arg, int x, int y)
 	gfx_update(mapedit->gfx);
 }
 
+/** Set up new map for use.
+ *
+ * @param mapedit Map editor
+ */
+static int mapedit_map_setup(mapedit_t *mapedit)
+{
+	map_set_orig(mapedit->map, 0, 50);
+	map_set_tile_size(mapedit->map, 32, 32);
+	map_set_tile_margins(mapedit->map, 4, 4);
+	map_set_cb(mapedit->map, mapedit_map_cb, mapedit);
+
+	return map_load_tile_img(mapedit->map, map_tile_files);
+}
+
 int main(void)
 {
 	gfx_t gfx;
@@ -247,18 +286,12 @@ int main(void)
 	toolbar_set_origin(mapedit.map_tb, 8, 8);
 	toolbar_set_cb(mapedit.map_tb, mapedit_map_toolbar_cb, &mapedit);
 
-	rc = map_create(8, 8, &mapedit.map);
-	if (rc != 0)
-		return 1;
-
-	map_set_orig(mapedit.map, 0, 50);
-	map_set_tile_size(mapedit.map, 32, 32);
-	map_set_tile_margins(mapedit.map, 4, 4);
-	map_set_cb(mapedit.map, mapedit_map_cb, &mapedit);
-
-	rc = map_load_tile_img(mapedit.map, map_tile_files);
-	if (rc != 0)
-		return 1;
+	rc = mapedit_load(&mapedit);
+	if (rc != 0) {
+		rc = mapedit_new(&mapedit);
+		if (rc != 0)
+			return 1;
+	}
 
 	rc = gfx_init(&gfx);
 	if (rc != 0)
@@ -272,6 +305,12 @@ int main(void)
 		if (toolbar_event(mapedit.map_tb, &e))
 			continue;
 		mapedit_event(&mapedit, &e, &gfx);
+	}
+
+	rc = mapedit_save(&mapedit);
+	if (rc != 0) {
+		printf("Error saving map!\n");
+		return 1;
 	}
 
 	toolbar_destroy(mapedit.map_tb);
