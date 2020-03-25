@@ -50,6 +50,16 @@ static const char *map_tb_files[] = {
 	NULL
 };
 
+static const char *map_tile_files[] = {
+	"img/tile/empty.bmp",
+	"img/tile/wall.bmp",
+	"img/tile/white.bmp",
+	"img/tile/grey.bmp",
+	"img/tile/black.bmp",
+	"img/tile/robot.bmp",
+	NULL
+};
+
 /** Map editor */
 typedef struct {
 	/** Map */
@@ -245,6 +255,10 @@ int main(void)
 	map_set_tile_size(mapedit.map, 32, 32);
 	map_set_tile_margins(mapedit.map, 4, 4);
 	map_set_cb(mapedit.map, mapedit_map_cb, &mapedit);
+
+	rc = map_load_tile_img(mapedit.map, map_tile_files);
+	if (rc != 0)
+		return 1;
 
 	rc = gfx_init(&gfx);
 	if (rc != 0)

@@ -23,6 +23,7 @@
 #ifndef MAP_H
 #define MAP_H
 
+#include <SDL.h>
 #include <stdio.h>
 
 typedef void (*map_cb_t)(void *arg, int x, int y);
@@ -60,6 +61,10 @@ typedef struct {
 	map_cb_t cb;
 	/** Callback argument */
 	void *cb_arg;
+	/** Tile images */
+	SDL_Surface **image;
+	/** Number of images */
+	int nimages;
 } map_t;
 
 extern int map_create(int, int, map_t **);
@@ -68,6 +73,7 @@ extern void map_set_orig(map_t *, int, int);
 extern void map_set_tile_size(map_t *, int, int);
 extern void map_set_tile_margins(map_t *, int, int);
 extern void map_set_cb(map_t *, map_cb_t, void *);
+extern int map_load_tile_img(map_t *, const char **);
 extern int map_load(FILE *, map_t **);
 extern int map_save(map_t *, FILE *);
 extern void map_draw(map_t *, gfx_t *);

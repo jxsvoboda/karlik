@@ -129,6 +129,49 @@ void map_set_cb(map_t *map, map_cb_t cb, void *arg)
 	map->cb_arg = arg;
 }
 
+/** Load tile images.
+ *
+ * @param map Map
+ * @param fname Null-terminated list of file names
+ * @return Zero on success or an error code
+ */
+int map_load_tile_img(map_t *map, const char **fname)
+{
+	int nimages;
+	int i;
+	const char **cp;
+	SDL_Surface **images;
+
+	/* Count number of entries */
+	cp = fname;
+	nimages = 0;
+	while (*cp != NULL) {
+		++nimages;
+		++cp;
+	}
+
+	images = calloc(nimages, sizeof(SDL_Surface *));
+	if (images == NULL)
+		return ENOMEM;
+
+	for (i = 0; i < nimages; i++) {
+		printf("load %s\n", fname[i]);
+		images[i] = SDL_LoadBMP(fname[i]);
+		if (images[i] == NULL)
+			goto error;
+	}
+
+	map->image = images;
+	map->nimages = nimages;
+	return 0;
+error:
+	for (i = 0; i < nimages; i++)
+		if (images[i] != NULL)
+			SDL_FreeSurface(images[i]);
+	free(images);
+	return EIO;
+}
+
 /** Draw map.
  *
  * @param map Icon menu
@@ -139,6 +182,11 @@ void map_draw(map_t *map, gfx_t *gfx)
 	uint32_t color;
 	int x, y;
 	int dx, dy;
+	map_tile_t ttype;
+	SDL_Surface *surf;
+	SDL_Rect drect;
+
+	surf = SDL_GetWindowSurface(gfx->win);
 
 	for (x = 0; x < map->width; x++) {
 		dx = map->orig_x + (1 + x) * map->margin_x + x * map->tile_w;
@@ -149,6 +197,14 @@ void map_draw(map_t *map, gfx_t *gfx)
 
 			color = gfx_rgb(gfx, 128 + 128 * map->tile[x][y], 0, 0);
 			gfx_rect(gfx, dx, dy, map->tile_w, map->tile_h, color);
+			drect.x = dx;
+			drect.y = dy;
+			drect.w = map->tile_w;
+			drect.h = map->tile_h;
+
+			ttype = map->tile[x][y];
+
+			SDL_BlitScaled(map->image[ttype], NULL, surf, &drect);
 		}
 	}
 }
