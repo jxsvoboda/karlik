@@ -29,7 +29,11 @@ typedef void (*map_cb_t)(void *arg, int x, int y);
 
 typedef enum {
 	mapt_none,
-	mapt_wall
+	mapt_wall,
+	mapt_wtag,
+	mapt_gtag,
+	mapt_btag,
+	mapt_robot
 } map_tile_t;
 
 /** City map */

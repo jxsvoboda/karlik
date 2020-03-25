@@ -50,20 +50,12 @@ static const char *map_tb_files[] = {
 	NULL
 };
 
-/** Map editor action */
-typedef enum {
-	/** Create wall */
-	ea_wall,
-	/** Delete object */
-	ea_delete
-} ed_action_t;
-
 /** Map editor */
 typedef struct {
 	/** Map */
 	map_t *map;
-	/** Selected action */
-	ed_action_t action;
+	/** Selected tile type */
+	map_tile_t ttype;
 	/** Map editor toolbar */
 	toolbar_t *map_tb;
 	/** @c true to quit */
@@ -134,39 +126,6 @@ static int mapedit_save(mapedit_t *mapedit)
 	return 0;
 }
 
-#if 0
-static void button_press_left_create(mapedit_t *mapedit, int x, int y)
-{
-	uint8_t tx, ty;
-	map_t *map = mapedit->map;
-
-	coord_tile(x, y, &tx, &ty);
-	if (tx < map->width && ty < map->height)
-		map->tile[x][y] = mapt_wall;
-}
-
-static void button_press_left_delete(mapedit_t *mapedit, int x, int y)
-{
-	uint8_t tx, ty;
-	map_t *map = mapedit->map;
-
-	coord_tile(x, y, &tx, &ty);
-	if (tx < map->width && ty < map->height)
-		map->tile[x][y] = mapt_none;
-}
-
-static void button_press_left(mapedit_t *mapedit, int x, int y)
-{
-	switch (mapedit->action) {
-	case ea_wall:
-		button_press_left_create(mapedit, x, y);
-		break;
-	case ea_delete:
-		button_press_left_delete(mapedit, x, y);
-	}
-}
-#endif
-
 static void key_press(mapedit_t *mapedit, SDL_Scancode scancode)
 {
 	switch (scancode) {
@@ -219,12 +178,41 @@ static void mapedit_map_toolbar_cb(void *arg, int idx)
 
 	switch (idx) {
 	case 0:
-		mapedit->action = ea_wall;
+		mapedit->ttype = mapt_wall;
+		break;
+	case 1:
+		mapedit->ttype = mapt_wtag;
+		break;
+	case 2:
+		mapedit->ttype = mapt_gtag;
+		break;
+	case 3:
+		mapedit->ttype = mapt_btag;
 		break;
 	case 4:
-		mapedit->action = ea_delete;
+		mapedit->ttype = mapt_robot;
+		break;
+	case 5:
+		mapedit->ttype = mapt_none;
 		break;
 	}
+
+	mapedit_display(mapedit, mapedit->gfx);
+	gfx_update(mapedit->gfx);
+}
+
+/** Map callback.
+ *
+ * @param arg Map editor (mapedit_t *)
+ * @param x Tile X coordinate
+ * @param y Tile Y coordinate
+ */
+static void mapedit_map_cb(void *arg, int x, int y)
+{
+	mapedit_t *mapedit = (mapedit_t *)arg;
+	printf("mapedit_map_cb(%d,%d)\n", x, y);
+
+	mapedit->map->tile[x][y] = mapedit->ttype;
 
 	mapedit_display(mapedit, mapedit->gfx);
 	gfx_update(mapedit->gfx);
@@ -238,7 +226,7 @@ int main(void)
 	int rc;
 
 	mapedit.quit = false;
-	mapedit.action = ea_wall;
+	mapedit.ttype = mapt_wall;
 
 	rc = toolbar_create(map_tb_files, &mapedit.map_tb);
 	if (rc != 0) {
@@ -256,6 +244,7 @@ int main(void)
 	map_set_orig(mapedit.map, 0, 50);
 	map_set_tile_size(mapedit.map, 32, 32);
 	map_set_tile_margins(mapedit.map, 4, 4);
+	map_set_cb(mapedit.map, mapedit_map_cb, &mapedit);
 
 	rc = gfx_init(&gfx);
 	if (rc != 0)
