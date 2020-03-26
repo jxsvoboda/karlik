@@ -204,7 +204,7 @@ void map_draw(map_t *map, gfx_t *gfx)
 
 			ttype = map->tile[x][y];
 
-			if (ttype < map->nimages)
+			if ((int)ttype < map->nimages)
 				SDL_BlitScaled(map->image[ttype], NULL, surf, &drect);
 		}
 	}
