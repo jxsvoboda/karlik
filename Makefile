@@ -30,6 +30,7 @@ sources = \
 	gfx.c \
 	main.c \
 	map.c \
+	mapedit.c \
 	toolbar.c
 
 headers = $(wildcard *.h)

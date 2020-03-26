@@ -20,71 +20,31 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-/*
- * Karlik main
- */
+#ifndef MAPEDIT_H
+#define MAPEDIT_H
 
 #include <stdbool.h>
-#include <stdio.h>
-#include <SDL.h>
 #include "gfx.h"
-#include "mapedit.h"
+#include "map.h"
+#include "toolbar.h"
 
-static void print_syntax(void)
-{
-	printf("Syntax: karlik [-f]\n");
-}
+/** Map editor */
+typedef struct {
+	/** Map */
+	map_t *map;
+	/** Selected tile type */
+	map_tile_t ttype;
+	/** Map editor toolbar */
+	toolbar_t *map_tb;
+	/** @c true to quit */
+	bool quit;
+	/** Graphics */
+	gfx_t *gfx;
+} mapedit_t;
 
-int main(int argc, char *argv[])
-{
-	gfx_t gfx;
-	SDL_Event e;
-	mapedit_t *mapedit = NULL;
-	bool fs = false;
-	int rc;
+extern int mapedit_create(gfx_t *, mapedit_t **);
+extern void mapedit_destroy(mapedit_t *);
+extern int mapedit_save(mapedit_t *);
+extern void mapedit_event(mapedit_t *, SDL_Event *, gfx_t *);
 
-	if (argc >= 2) {
-		if (strcmp(argv[1], "-f") == 0) {
-			fs = true;
-		} else {
-			print_syntax();
-			return 1;
-		}
-
-		if (argc > 2) {
-			print_syntax();
-			return 1;
-		}
-	}
-
-	rc = gfx_init(&gfx, fs);
-	if (rc != 0)
-		return 1;
-
-	SDL_Surface *appicon = SDL_LoadBMP("img/appicon.bmp");
-	if (appicon == NULL)
-		return 1;
-
-	SDL_SetWindowIcon(gfx.win, appicon);
-
-	rc = mapedit_create(&gfx, &mapedit);
-	if (rc != 0)
-		return 1;
-
-	while (!mapedit->quit && SDL_WaitEvent(&e)) {
-		if (toolbar_event(mapedit->map_tb, &e))
-			continue;
-		mapedit_event(mapedit, &e, &gfx);
-	}
-
-	rc = mapedit_save(mapedit);
-	if (rc != 0) {
-		printf("Error saving map!\n");
-		return 1;
-	}
-
-	mapedit_destroy(mapedit);
-	gfx_quit(&gfx);
-
-	return 0;
-}
+#endif
