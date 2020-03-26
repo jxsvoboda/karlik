@@ -297,6 +297,12 @@ int main(void)
 	if (rc != 0)
 		return 1;
 
+	SDL_Surface *appicon = SDL_LoadBMP("img/appicon.bmp");
+	if (appicon == NULL)
+		return 1;
+
+	SDL_SetWindowIcon(gfx.win, appicon);
+
 	mapedit.gfx = &gfx;
 	mapedit_display(&mapedit, &gfx);
 	gfx_update(&gfx);
