@@ -127,6 +127,16 @@ void toolbar_destroy(toolbar_t *toolbar)
 	free(toolbar);
 }
 
+/** Select toolbar entry.
+ *
+ * @param toolbar Toolbar
+ * @param sel Entry to select
+ */
+void toolbar_select(toolbar_t *toolbar, int sel)
+{
+	toolbar->sel = sel;
+}
+
 /** Draw toolbar.
  *
  * @param toolbar Icon menu

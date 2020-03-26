@@ -57,6 +57,7 @@ extern int toolbar_create(const char **, toolbar_t **);
 extern void toolbar_set_origin(toolbar_t *, int, int);
 extern void toolbar_set_cb(toolbar_t *, toolbar_cb_t, void *);
 extern void toolbar_destroy(toolbar_t *);
+extern void toolbar_select(toolbar_t *, int);
 extern void toolbar_draw(toolbar_t *, gfx_t *);
 extern bool toolbar_event(toolbar_t *, SDL_Event *);
 

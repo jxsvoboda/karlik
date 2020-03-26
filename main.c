@@ -24,6 +24,7 @@
  * Map editor
  */
 
+#include <assert.h>
 #include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -112,27 +113,40 @@ static int mapedit_load(mapedit_t *mapedit)
 {
 	FILE *f;
 	int rc;
+	int nitem;
+	int ttype;
 
 	f = fopen("city.map", "r");
 	if (f == NULL)
 		return EIO;
 
+	nitem = fscanf(f, "%d\n", &ttype);
+	if (nitem != 1) {
+		rc = EIO;
+		goto error;
+	}
+
 	rc = map_load(f, &mapedit->map);
 	if (rc != 0) {
-		printf("Error loading map.\n");
-		fclose(f);
-		return EIO;
+		rc = EIO;
+		goto error;
 	}
 
 	rc = mapedit_map_setup(mapedit);
 	if (rc != 0) {
 		map_destroy(mapedit->map);
 		mapedit->map = NULL;
-		return rc;
+		goto error;
 	}
 
 	(void) fclose(f);
+	if (ttype >= 0 && ttype <= mapt_robot)
+		mapedit->ttype = ttype;
 	return 0;
+error:
+	printf("Error loading map.\n");
+	fclose(f);
+	return rc;
 }
 
 /** Save current project.
@@ -143,14 +157,22 @@ static int mapedit_save(mapedit_t *mapedit)
 {
 	FILE *f;
 	int rc;
+	int rv;
 
 	f = fopen("city.map", "w");
 	if (f == NULL)
 		return EIO;
 
+	rv = fprintf(f, "%d\n", (int)mapedit->ttype);
+	if (rv < 0) {
+		printf("Error saving map.\n");
+		fclose(f);
+		return EIO;
+	}
+
 	rc = map_save(mapedit->map, f);
 	if (rc != 0) {
-		printf("Error saving level.\n");
+		printf("Error saving map.\n");
 		fclose(f);
 		return EIO;
 	}
@@ -236,6 +258,32 @@ static void mapedit_map_toolbar_cb(void *arg, int idx)
 	gfx_update(mapedit->gfx);
 }
 
+/** Get toolbar index corresponsing to map tile type.
+ *
+ * @param mapt Map tile type
+ * @return Toolbar index
+ */
+static int mapedit_mapt_to_toolbar_idx(map_tile_t mapt)
+{
+	switch (mapt) {
+	case mapt_wall:
+		return 0;
+	case mapt_wtag:
+		return 1;
+	case mapt_gtag:
+		return 2;
+	case mapt_btag:
+		return 3;
+	case mapt_robot:
+		return 4;
+	case mapt_none:
+		return 5;
+	}
+
+	assert(false);
+	return 0;
+}
+
 /** Map callback.
  *
  * @param arg Map editor (mapedit_t *)
@@ -312,6 +360,9 @@ int main(int argc, char *argv[])
 		if (rc != 0)
 			return 1;
 	}
+
+	toolbar_select(mapedit.map_tb,
+	    mapedit_mapt_to_toolbar_idx(mapedit.ttype));
 
 	rc = gfx_init(&gfx, fs);
 	if (rc != 0)

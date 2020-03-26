@@ -47,7 +47,7 @@ int gfx_init(gfx_t *gfx, bool fullscreen)
 
 	gfx->win = SDL_CreateWindow("Karlik", SDL_WINDOWPOS_CENTERED,
 	    SDL_WINDOWPOS_CENTERED, 640, 480, fullscreen ?
-		SDL_WINDOW_FULLSCREEN : 0);
+	    SDL_WINDOW_FULLSCREEN : 0);
 
 	if (gfx->win == NULL)
 		return -1;
