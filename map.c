@@ -75,9 +75,11 @@ void map_destroy(map_t *map)
 {
 	int x;
 
-	for (x = 0; x < map->width; x++) {
-		if (map->tile[x] != NULL)
-			free(map->tile[x]);
+	if (map->tile != NULL) {
+		for (x = 0; x < map->width; x++) {
+			if (map->tile[x] != NULL)
+				free(map->tile[x]);
+		}
 	}
 
 	free(map->tile);
