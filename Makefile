@@ -36,8 +36,9 @@ headers = $(wildcard types/*.h *.h)
 objects = $(sources:.c=.o)
 
 output	= karlik
+launcher = Karlik.desktop
 
-all: $(output)
+all: $(output) $(launcher)
 
 $(output): $(objects)
 	$(CC) $(LIBS) -o $@ $^
@@ -45,8 +46,12 @@ $(output): $(objects)
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $^
 
+$(launcher):
+	./mklauncher.sh $(PWD) >$@
+	chmod 755 $@
+
 ccheck:
 	ccheck-run.sh $(PWD)
 
 clean:
-	rm -f $(output) $(objects)
+	rm -f $(output) $(objects) $(launcher)
