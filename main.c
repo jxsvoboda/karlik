@@ -267,12 +267,32 @@ static int mapedit_map_setup(mapedit_t *mapedit)
 	return map_load_tile_img(mapedit->map, map_tile_files);
 }
 
-int main(void)
+static void print_syntax(void)
+{
+	printf("Syntax: karlik [-f]\n");
+}
+
+int main(int argc, char *argv[])
 {
 	gfx_t gfx;
 	SDL_Event e;
 	mapedit_t mapedit;
+	bool fs = false;
 	int rc;
+
+	if (argc >= 2) {
+		if (strcmp(argv[1], "-f") == 0) {
+			fs = true;
+		} else {
+			print_syntax();
+			return 1;
+		}
+
+		if (argc > 2) {
+			print_syntax();
+			return 1;
+		}
+	}
 
 	mapedit.quit = false;
 	mapedit.ttype = mapt_wall;
@@ -293,7 +313,7 @@ int main(void)
 			return 1;
 	}
 
-	rc = gfx_init(&gfx);
+	rc = gfx_init(&gfx, fs);
 	if (rc != 0)
 		return 1;
 
@@ -320,6 +340,7 @@ int main(void)
 	}
 
 	toolbar_destroy(mapedit.map_tb);
+	gfx_quit(&gfx);
 
 	return 0;
 }

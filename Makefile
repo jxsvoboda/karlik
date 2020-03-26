@@ -32,7 +32,7 @@ sources = \
 	map.c \
 	toolbar.c
 
-headers = $(wildcard types/*.h *.h)
+headers = $(wildcard *.h)
 objects = $(sources:.c=.o)
 
 output	= karlik

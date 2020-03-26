@@ -25,13 +25,15 @@
  */
 
 #include <SDL.h>
+#include <stdbool.h>
 #include "gfx.h"
 
 /** Initialize graphics.
  *
  * @param gfx Graphics object to initialize
+ * @param fullscreen @c true to start in fullscreen mode
  */
-int gfx_init(gfx_t *gfx)
+int gfx_init(gfx_t *gfx, bool fullscreen)
 {
 	int rc;
 	SDL_Surface *surf;
@@ -41,8 +43,12 @@ int gfx_init(gfx_t *gfx)
 	if (rc != 0)
 		return -1;
 
+	atexit(SDL_Quit);
+
 	gfx->win = SDL_CreateWindow("Karlik", SDL_WINDOWPOS_CENTERED,
-	    SDL_WINDOWPOS_CENTERED, 640, 480, 0);
+	    SDL_WINDOWPOS_CENTERED, 640, 480, fullscreen ?
+		SDL_WINDOW_FULLSCREEN : 0);
+
 	if (gfx->win == NULL)
 		return -1;
 
@@ -55,6 +61,18 @@ int gfx_init(gfx_t *gfx)
 	SDL_UpdateWindowSurface(gfx->win);
 
 	return 0;
+}
+
+/** Deinitialize graphics.
+ *
+ * @param gfx Graphics
+ */
+void gfx_quit(gfx_t *gfx)
+{
+	SDL_DestroyWindow(gfx->win);
+	gfx->win = NULL;
+
+	SDL_Quit();
 }
 
 /** Draw a rectangle.
