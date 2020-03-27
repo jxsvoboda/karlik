@@ -69,7 +69,6 @@ int toolbar_create(const char **fname, toolbar_t **rtoolbar)
 	}
 
 	for (i = 0; i < nentries; i++) {
-		printf("load %s\n", fname[i]);
 		toolbar->icon[i] = SDL_LoadBMP(fname[i]);
 		if (toolbar->icon[i] == NULL)
 			goto error;

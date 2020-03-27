@@ -165,7 +165,6 @@ int map_load_tile_img(map_t *map, const char **fname)
 		return ENOMEM;
 
 	for (i = 0; i < nimages; i++) {
-		printf("load %s\n", fname[i]);
 		images[i] = SDL_LoadBMP(fname[i]);
 		if (images[i] == NULL)
 			goto error;
