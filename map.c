@@ -74,6 +74,7 @@ error:
 void map_destroy(map_t *map)
 {
 	int x;
+	int i;
 
 	if (map->tile != NULL) {
 		for (x = 0; x < map->width; x++) {
@@ -83,6 +84,13 @@ void map_destroy(map_t *map)
 	}
 
 	free(map->tile);
+
+	for (i = 0; i < map->nimages; i++) {
+		if (map->image[i] != NULL)
+			SDL_FreeSurface(map->image[i]);
+	}
+
+	free(map->image);
 	free(map);
 }
 

@@ -124,6 +124,7 @@ void toolbar_destroy(toolbar_t *toolbar)
 			SDL_FreeSurface(toolbar->icon[i]);
 	}
 
+	free(toolbar->icon);
 	free(toolbar);
 }
 
