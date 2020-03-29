@@ -28,7 +28,7 @@
 #include <stdio.h>
 #include <SDL.h>
 #include "gfx.h"
-#include "mapedit.h"
+#include "karlik.h"
 
 static void print_syntax(void)
 {
@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
 {
 	gfx_t gfx;
 	SDL_Event e;
-	mapedit_t *mapedit = NULL;
+	karlik_t *karlik = NULL;
 	bool fs = false;
 	int rc;
 
@@ -67,23 +67,21 @@ int main(int argc, char *argv[])
 
 	SDL_SetWindowIcon(gfx.win, appicon);
 
-	rc = mapedit_create(&gfx, &mapedit);
+	rc = karlik_create(&gfx, &karlik);
 	if (rc != 0)
 		return 1;
 
-	while (!mapedit->quit && SDL_WaitEvent(&e)) {
-		if (toolbar_event(mapedit->map_tb, &e))
-			continue;
-		mapedit_event(mapedit, &e, &gfx);
+	while (!karlik->quit && SDL_WaitEvent(&e)) {
+		karlik_event(karlik, &e, &gfx);
 	}
 
-	rc = mapedit_save(mapedit);
+	rc = karlik_save(karlik);
 	if (rc != 0) {
 		printf("Error saving map!\n");
 		return 1;
 	}
 
-	mapedit_destroy(mapedit);
+	karlik_destroy(karlik);
 	gfx_quit(&gfx);
 
 	return 0;

@@ -20,41 +20,40 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef MAPEDIT_H
-#define MAPEDIT_H
+#ifndef KARLIK_H
+#define KARLIK_H
 
 #include <SDL.h>
 #include <stdbool.h>
-#include <stdio.h>
 #include "gfx.h"
-#include "map.h"
+#include "mapedit.h"
 #include "toolbar.h"
 
-typedef struct {
-	void (*repaint)(void *);
-} mapedit_cb_t;
+/** Selected mode */
+typedef enum {
+	/** Map editing mode */
+	km_map,
+	/** Vocabulary mode */
+	km_vocab
+} karlik_mode_t;
 
-/** Map editor */
+/** Karlik UI main */
 typedef struct {
-	/** Map */
-	map_t *map;
 	/** Selected tile type */
-	map_tile_t ttype;
-	/** Map editor toolbar */
-	toolbar_t *map_tb;
+	karlik_mode_t kmode;
+	/** Main toolbar */
+	toolbar_t *main_tb;
 	/** @c true to quit */
 	bool quit;
-	/** Callbacks */
-	mapedit_cb_t *cb;
-	/** Callback argument */
-	void *arg;
-} mapedit_t;
+	/** Graphics */
+	gfx_t *gfx;
+	/** Map editor */
+	mapedit_t *mapedit;
+} karlik_t;
 
-extern int mapedit_new(mapedit_cb_t *, void *, mapedit_t **);
-extern int mapedit_load(FILE *, mapedit_cb_t *, void *, mapedit_t **);
-extern void mapedit_destroy(mapedit_t *);
-extern void mapedit_display(mapedit_t *, gfx_t *gfx);
-extern int mapedit_save(mapedit_t *, FILE *);
-extern void mapedit_event(mapedit_t *, SDL_Event *, gfx_t *);
+extern int karlik_create(gfx_t *, karlik_t **);
+extern void karlik_destroy(karlik_t *);
+extern int karlik_save(karlik_t *);
+extern void karlik_event(karlik_t *, SDL_Event *, gfx_t *);
 
 #endif

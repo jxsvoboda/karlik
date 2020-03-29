@@ -28,6 +28,7 @@ LIBS	= `pkg-config --libs sdl2`
 
 sources = \
 	gfx.c \
+	karlik.c \
 	main.c \
 	map.c \
 	mapedit.c \
@@ -44,8 +45,8 @@ all: $(output) $(launcher)
 $(output): $(objects)
 	$(CC) $(LIBS) -o $@ $^
 
-%.o: %.c
-	$(CC) $(CFLAGS) -c -o $@ $^
+%.o: %.c $(headers)
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(launcher):
 	./mklauncher.sh $(PWD) >$@
