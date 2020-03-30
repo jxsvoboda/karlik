@@ -40,7 +40,6 @@ typedef struct {
 	link_t head;
 } list_t;
 
-
 #define list_get_instance(link, type, member) \
 	((type *)( (char *)(link) - ((char *) &((type *) NULL)->member)))
 

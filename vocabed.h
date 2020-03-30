@@ -39,8 +39,6 @@ typedef struct {
 typedef struct {
 	/** Map */
 	map_t *map;
-	/** Map editor toolbar */
-//	toolbar_t *map_tb;
 	/** Verb view */
 	wordlist_t *verbs;
 	/** @c true to quit */

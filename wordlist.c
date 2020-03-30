@@ -87,12 +87,15 @@ void wordlist_set_cb(wordlist_t *wordlist, wordlist_cb_t cb, void *arg)
  */
 void wordlist_destroy(wordlist_t *wordlist)
 {
-//	int i;
+	wordlist_entry_t *entry;
 
-//	for (i = 0; i < wordlist->nentries; i++) {
-//		if (wordlist->icon[i] != NULL)
-//			SDL_FreeSurface(wordlist->icon[i]);
-//	}
+	entry = wordlist_first(wordlist);
+	while (entry != NULL) {
+		list_remove(&entry->lwlist);
+		free(entry);
+
+		entry = wordlist_first(wordlist);
+	}
 
 	free(wordlist);
 }
