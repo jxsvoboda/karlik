@@ -20,43 +20,42 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef KARLIK_H
-#define KARLIK_H
+#ifndef VOCABED_H
+#define VOCABED_H
 
 #include <SDL.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include "gfx.h"
-#include "mapedit.h"
+#include "map.h"
 #include "toolbar.h"
-#include "vocabed.h"
+#include "wordlist.h"
 
-/** Selected mode */
-typedef enum {
-	/** Map editing mode */
-	km_map,
-	/** Vocabulary mode */
-	km_vocab
-} karlik_mode_t;
-
-/** Karlik UI main */
 typedef struct {
-	/** Selected tile type */
-	karlik_mode_t kmode;
-	/** Main toolbar */
-	toolbar_t *main_tb;
+	void (*repaint)(void *);
+} vocabed_cb_t;
+
+/** Map editor */
+typedef struct {
+	/** Map */
+	map_t *map;
+	/** Map editor toolbar */
+//	toolbar_t *map_tb;
+	/** Verb view */
+	wordlist_t *verbs;
 	/** @c true to quit */
 	bool quit;
-	/** Graphics */
-	gfx_t *gfx;
-	/** Map editor */
-	mapedit_t *mapedit;
-	/** Vocabulary editor */
-	vocabed_t *vocabed;
-} karlik_t;
+	/** Callbacks */
+	vocabed_cb_t *cb;
+	/** Callback argument */
+	void *arg;
+} vocabed_t;
 
-extern int karlik_create(gfx_t *, karlik_t **);
-extern void karlik_destroy(karlik_t *);
-extern int karlik_save(karlik_t *);
-extern void karlik_event(karlik_t *, SDL_Event *, gfx_t *);
+extern int vocabed_new(vocabed_cb_t *, void *, vocabed_t **);
+extern int vocabed_load(FILE *, vocabed_cb_t *, void *, vocabed_t **);
+extern void vocabed_destroy(vocabed_t *);
+extern void vocabed_display(vocabed_t *, gfx_t *gfx);
+extern int vocabed_save(vocabed_t *, FILE *);
+extern void vocabed_event(vocabed_t *, SDL_Event *, gfx_t *);
 
 #endif

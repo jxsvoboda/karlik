@@ -201,7 +201,7 @@ bool toolbar_event(toolbar_t *toolbar, SDL_Event *event)
 			    mbe->x < drect.x + drect.w &&
 			    mbe->y < drect.y + drect.h) {
 				toolbar->sel = i;
-				if (toolbar->cb)
+				if (toolbar->cb != NULL)
 					toolbar->cb(toolbar->arg, i);
 				return true;
 			}

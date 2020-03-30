@@ -104,7 +104,6 @@ static int mapedit_create(mapedit_cb_t *cb, void *arg, map_t *map,
 	if (mapedit == NULL)
 		return ENOMEM;
 
-	mapedit->quit = false;
 	mapedit->ttype = mapt_wall;
 
 	rc = toolbar_create(map_tb_files, &mapedit->map_tb);
@@ -270,13 +269,8 @@ void mapedit_event(mapedit_t *mapedit, SDL_Event *e, gfx_t *gfx)
 	(void) map_event(mapedit->map, e);
 
 	switch (e->type) {
-	case SDL_QUIT:
-		mapedit->quit = true;
-		break;
 	case SDL_KEYDOWN:
 		ke = (SDL_KeyboardEvent *) e;
-		if (ke->keysym.scancode == SDL_SCANCODE_ESCAPE)
-			mapedit->quit = true;
 		key_press(mapedit, ke->keysym.scancode);
 		break;
 	case SDL_MOUSEBUTTONDOWN:

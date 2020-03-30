@@ -33,6 +33,7 @@
 #include "karlik.h"
 #include "mapedit.h"
 #include "toolbar.h"
+#include "vocabed.h"
 
 static void karlik_cb_repaint(void *);
 static void karlik_display(karlik_t *, gfx_t *);
@@ -44,6 +45,10 @@ static const char *main_tb_files[] = {
 };
 
 static mapedit_cb_t karlik_mapedit_cb = {
+	.repaint = karlik_cb_repaint
+};
+
+static vocabed_cb_t karlik_vocabed_cb = {
 	.repaint = karlik_cb_repaint
 };
 
@@ -64,8 +69,16 @@ static void karlik_display(karlik_t *karlik, gfx_t *gfx)
 {
 	gfx_clear(gfx);
 
-	if (karlik->mapedit != NULL && karlik->kmode == km_map)
-		mapedit_display(karlik->mapedit, gfx);
+	switch (karlik->kmode) {
+	case km_map:
+		if (karlik->mapedit != NULL)
+			mapedit_display(karlik->mapedit, gfx);
+		break;
+	case km_vocab:
+		if (karlik->vocabed != NULL)
+			vocabed_display(karlik->vocabed, gfx);
+		break;
+	}
 
 	toolbar_draw(karlik->main_tb, gfx);
 }
@@ -82,6 +95,11 @@ static int karlik_new(gfx_t *gfx, karlik_t *karlik)
 
 	rc = mapedit_new(&karlik_mapedit_cb, (void *)karlik,
 	    &karlik->mapedit);
+	if (rc != 0)
+		return rc;
+
+	rc = vocabed_new(&karlik_vocabed_cb, (void *)karlik,
+	    &karlik->vocabed);
 	if (rc != 0)
 		return rc;
 
@@ -121,6 +139,13 @@ static int karlik_load(gfx_t *gfx, karlik_t *karlik)
 		goto error;
 	}
 
+	rc = vocabed_load(f, &karlik_vocabed_cb, (void *)karlik,
+	    &karlik->vocabed);
+	if (rc != 0) {
+		rc = EIO;
+		goto error;
+	}
+
 	(void) fclose(f);
 	return 0;
 error:
@@ -151,7 +176,14 @@ int karlik_save(karlik_t *karlik)
 
 	rc = mapedit_save(karlik->mapedit, f);
 	if (rc != 0) {
-		printf("Error saving map.\n");
+		printf("Error saving map editor.\n");
+		fclose(f);
+		return EIO;
+	}
+
+	rc = vocabed_save(karlik->vocabed, f);
+	if (rc != 0) {
+		printf("Error saving vocabulary editor.\n");
 		fclose(f);
 		return EIO;
 	}
@@ -186,8 +218,14 @@ void karlik_event(karlik_t *karlik, SDL_Event *e, gfx_t *gfx)
 	if (toolbar_event(karlik->main_tb, e))
 		return;
 
-	if (karlik->kmode == km_map)
+	switch (karlik->kmode) {
+	case km_map:
 		(void) mapedit_event(karlik->mapedit, e, gfx);
+		break;
+	case km_vocab:
+		(void) vocabed_event(karlik->vocabed, e, gfx);
+		break;
+	}
 
 	switch (e->type) {
 	case SDL_QUIT:

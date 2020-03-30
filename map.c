@@ -247,7 +247,7 @@ bool map_event(map_t *map, SDL_Event *event)
 				if (mbe->x >= drect.x && mbe->y >= drect.y &&
 				    mbe->x < drect.x + drect.w &&
 				    mbe->y < drect.y + drect.h) {
-					if (map->cb)
+					if (map->cb != NULL)
 						map->cb(map->cb_arg, x, y);
 					return true;
 				}

@@ -27,12 +27,15 @@ CFLAGS	= -Wall -Werror `pkg-config --cflags sdl2` -ggdb -Og
 LIBS	= `pkg-config --libs sdl2`
 
 sources = \
+	adt/list.c \
 	gfx.c \
 	karlik.c \
 	main.c \
 	map.c \
 	mapedit.c \
-	toolbar.c
+	toolbar.c \
+	vocabed.c \
+	wordlist.c
 
 headers = $(wildcard *.h)
 objects = $(sources:.c=.o)

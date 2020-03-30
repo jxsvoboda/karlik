@@ -1,0 +1,213 @@
+/*
+ * Copyright 2020 Jiri Svoboda
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
+ */
+
+/*
+ * Wordlist - a list of icons representing words for selection
+ */
+
+#include <errno.h>
+#include <SDL.h>
+#include <stdbool.h>
+#include "gfx.h"
+#include "wordlist.h"
+
+enum {
+	wordlist_hmargin = 4,
+	wordlist_frame_width = 2
+};
+
+static wordlist_entry_t *wordlist_first(wordlist_t *);
+static wordlist_entry_t *wordlist_next(wordlist_entry_t *);
+
+/** Create wordlist.
+ *
+ * @param rwordlist Place to store pointer to new wordlist
+ *
+ * @return Zero on success or error code
+ */
+int wordlist_create(wordlist_t **rwordlist)
+{
+	wordlist_t *wordlist;
+
+	wordlist = calloc(1, sizeof(wordlist_t));
+	if (wordlist == NULL)
+		return ENOMEM;
+
+	list_initialize(&wordlist->entries);
+	*rwordlist = wordlist;
+	return 0;
+}
+
+/** Set wordlist origin.
+ *
+ * @param wordlist Icon menu
+ * @param x X coordinate
+ * @param y Y coordinate
+ */
+void wordlist_set_origin(wordlist_t *wordlist, int x, int y)
+{
+	wordlist->orig_x = x;
+	wordlist->orig_y = y;
+}
+
+/** Set callback.
+ *
+ * @param wordlist wordlist
+ * @param cb Callback function
+ * @param arg Callback argument
+ */
+void wordlist_set_cb(wordlist_t *wordlist, wordlist_cb_t cb, void *arg)
+{
+	wordlist->cb = cb;
+	wordlist->arg = arg;
+}
+
+/** Destroy wordlist.
+ *
+ * @param wordlist Icon menu
+ */
+void wordlist_destroy(wordlist_t *wordlist)
+{
+//	int i;
+
+//	for (i = 0; i < wordlist->nentries; i++) {
+//		if (wordlist->icon[i] != NULL)
+//			SDL_FreeSurface(wordlist->icon[i]);
+//	}
+
+	free(wordlist);
+}
+
+/** Add new entry to wordlist.
+ *
+ * @param wordlist Wordlist
+ * @param icon Icon
+ * @param arg User argument
+ *
+ * @return Zero on success, ENOMEM if out of memory
+ */
+int wordlist_add(wordlist_t *wordlist, SDL_Surface *icon, void *arg)
+{
+	wordlist_entry_t *entry;
+
+	entry = calloc(1, sizeof(wordlist_entry_t));
+	if (entry == NULL)
+		return ENOMEM;
+
+	entry->wlist = wordlist;
+	list_append(&entry->lwlist, &wordlist->entries);
+	entry->icon = icon;
+	entry->arg = arg;
+
+	return 0;
+}
+
+/** Draw wordlist.
+ *
+ * @param wordlist Icon menu
+ * @param gfx Graphics object to draw to
+ */
+void wordlist_draw(wordlist_t *wordlist, gfx_t *gfx)
+{
+	SDL_Surface *surf;
+	SDL_Rect drect;
+	wordlist_entry_t *entry;
+
+	surf = SDL_GetWindowSurface(gfx->win);
+
+	drect.x = wordlist->orig_x;
+	drect.y = wordlist->orig_y;
+
+	entry = wordlist_first(wordlist);
+	while (entry != NULL) {
+		drect.x += wordlist_hmargin;
+		drect.w = 2 * entry->icon->w;
+		drect.h = 2 * entry->icon->h;
+
+		SDL_BlitScaled(entry->icon, NULL, surf, &drect);
+		drect.x += drect.w + wordlist_hmargin;
+
+		entry = wordlist_next(entry);
+	}
+}
+
+/** Process input event in wordlist.
+ *
+ * @param wordlist Icon menu
+ * @param event Event
+ * @return @c true if event is claimed
+ */
+bool wordlist_event(wordlist_t *wordlist, SDL_Event *event)
+{
+	SDL_Rect drect;
+	SDL_MouseButtonEvent *mbe;
+	wordlist_entry_t *entry;
+
+	drect.x = wordlist->orig_x + wordlist_hmargin;
+	drect.y = wordlist->orig_y;
+
+	entry = wordlist_first(wordlist);
+	while (entry != NULL) {
+		drect.x += wordlist_hmargin;
+		drect.w = 2 * entry->icon->w;
+		drect.h = 2 * entry->icon->h;
+
+		if (event->type == SDL_MOUSEBUTTONDOWN) {
+			mbe = (SDL_MouseButtonEvent *)event;
+			if (mbe->x >= drect.x && mbe->y >= drect.y &&
+			    mbe->x < drect.x + drect.w &&
+			    mbe->y < drect.y + drect.h) {
+				printf("Select entry %p\n", entry);
+				if (wordlist->cb != NULL)
+					wordlist->cb(wordlist->arg, entry->arg);
+				return true;
+			}
+		}
+
+		drect.x += drect.w + wordlist_hmargin;
+		entry = wordlist_next(entry);
+	}
+
+	return false;
+}
+
+static wordlist_entry_t *wordlist_first(wordlist_t *wordlist)
+{
+	link_t *link;
+
+	link = list_first(&wordlist->entries);
+	if (link == NULL)
+		return NULL;
+
+	return list_get_instance(link, wordlist_entry_t, lwlist);
+}
+
+static wordlist_entry_t *wordlist_next(wordlist_entry_t *cur)
+{
+	link_t *link;
+
+	link = list_next(&cur->lwlist, &cur->wlist->entries);
+	if (link == NULL)
+		return NULL;
+
+	return list_get_instance(link, wordlist_entry_t, lwlist);
+}
