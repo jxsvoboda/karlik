@@ -38,7 +38,7 @@ typedef enum {
 	km_vocab
 } karlik_mode_t;
 
-/** Karlik UI main */
+/** Karlik instance */
 typedef struct {
 	/** Selected tile type */
 	karlik_mode_t kmode;
@@ -48,6 +48,8 @@ typedef struct {
 	bool quit;
 	/** Graphics */
 	gfx_t *gfx;
+	/** Map */
+	map_t *map;
 	/** Map editor */
 	mapedit_t *mapedit;
 	/** Vocabulary editor */

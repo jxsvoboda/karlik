@@ -30,7 +30,7 @@
 #include <stdio.h>
 #include <SDL.h>
 #include "gfx.h"
-#include "map.h"
+#include "mapview.h"
 #include "vocabed.h"
 
 enum {
@@ -39,16 +39,6 @@ enum {
 
 	orig_x = 320,
 	orig_y = 240
-};
-
-static const char *map_tile_files[] = {
-	"img/tile/empty.bmp",
-	"img/tile/wall.bmp",
-	"img/tile/white.bmp",
-	"img/tile/grey.bmp",
-	"img/tile/black.bmp",
-	"img/tile/robot.bmp",
-	NULL
 };
 
 static const char *verb_icons[] = {
@@ -61,7 +51,7 @@ static const char *verb_icons[] = {
 	NULL
 };
 
-static int vocabed_map_setup(vocabed_t *);
+static void vocabed_map_setup(vocabed_t *);
 static void vocabed_verbs_cb(void *, void *);
 
 /** Display Map editor.
@@ -71,7 +61,7 @@ static void vocabed_verbs_cb(void *, void *);
  */
 void vocabed_display(vocabed_t *vocabed, gfx_t *gfx)
 {
-	map_draw(vocabed->map, gfx);
+	mapview_draw(vocabed->mapview, gfx);
 	wordlist_draw(vocabed->verbs, gfx);
 }
 
@@ -86,13 +76,13 @@ static void vocabed_repaint_req(vocabed_t *vocabed)
 
 /** Create map editor.
  *
+ * @param map Map
  * @param cb Callbacks
  * @param arg Callback arguments
- * @param map Map
  * @param rvocabed Place to store pointer to new map editor
  * @return Zero on success or an error code
  */
-static int vocabed_create(vocabed_cb_t *cb, void *arg, map_t *map,
+static int vocabed_create(map_t *map, vocabed_cb_t *cb, void *arg,
     vocabed_t **rvocabed)
 {
 	vocabed_t *vocabed;
@@ -103,6 +93,12 @@ static int vocabed_create(vocabed_cb_t *cb, void *arg, map_t *map,
 	vocabed = calloc(1, sizeof(vocabed_t));
 	if (vocabed == NULL)
 		return ENOMEM;
+
+	rc = mapview_create(map, &vocabed->mapview);
+	if (rc != 0) {
+		rc = ENOMEM;
+		goto error;
+	}
 
 	rc = wordlist_create(&vocabed->verbs);
 	if (rc != 0) {
@@ -131,9 +127,6 @@ static int vocabed_create(vocabed_cb_t *cb, void *arg, map_t *map,
 		++cp;
 	}
 
-	vocabed->quit = false;
-
-	vocabed->map = map;
 	vocabed->cb = cb;
 	vocabed->arg = arg;
 
@@ -146,33 +139,24 @@ error:
 
 /** Create new, empty map.
  *
+ * @param map Map
  * @param cb Callbacks
  * @param arg Callback arguments
  * @param rvocabed Place to store pointer to new map editor
  * @return Zero on success or an error code
  */
-int vocabed_new(vocabed_cb_t *cb, void *arg, vocabed_t **rvocabed)
+int vocabed_new(map_t *map, vocabed_cb_t *cb, void *arg, vocabed_t **rvocabed)
 {
-	map_t *map;
 	vocabed_t *vocabed;
 	int rc;
 
-	rc = map_create(8, 8, &map);
-	if (rc != 0)
-		return rc;
-
-	rc = vocabed_create(cb, arg, map, &vocabed);
+	rc = vocabed_create(map, cb, arg, &vocabed);
 	if (rc != 0) {
 		map_destroy(map);
 		return rc;
 	}
 
-	rc = vocabed_map_setup(vocabed);
-	if (rc != 0) {
-		vocabed_destroy(vocabed);
-		return rc;
-	}
-
+	vocabed_map_setup(vocabed);
 	vocabed_repaint_req(vocabed);
 
 	*rvocabed = vocabed;
@@ -181,33 +165,21 @@ int vocabed_new(vocabed_cb_t *cb, void *arg, vocabed_t **rvocabed)
 
 /** Load map editor.
  *
+ * @param map Map
  * @param f File
  * @param cb Callbacks
  * @param arg Callback arguments
  * @param rvocabed Place to store pointer to new map editor
  * @return Zero on success or an error code
  */
-int vocabed_load(FILE *f, vocabed_cb_t *cb, void *arg, vocabed_t **rvocabed)
+int vocabed_load(map_t *map, FILE *f, vocabed_cb_t *cb, void *arg, vocabed_t **rvocabed)
 {
-	map_t *map = NULL;
 	vocabed_t *vocabed = NULL;
 	int rc;
-	int nitem;
-	int ttype;
 
-	nitem = fscanf(f, "%d\n", &ttype);
-	if (nitem != 1) {
-		rc = EIO;
-		goto error;
-	}
+	(void) f;
 
-	rc = map_load(f, &map);
-	if (rc != 0) {
-		rc = EIO;
-		goto error;
-	}
-
-	rc = vocabed_create(cb, arg, map, &vocabed);
+	rc = vocabed_create(map, cb, arg, &vocabed);
 	if (rc != 0) {
 		rc = ENOMEM;
 		goto error;
@@ -215,12 +187,7 @@ int vocabed_load(FILE *f, vocabed_cb_t *cb, void *arg, vocabed_t **rvocabed)
 
 	map = NULL;
 
-	rc = vocabed_map_setup(vocabed);
-	if (rc != 0)
-		goto error;
-
-	printf("ttype=%d\n", ttype);
-
+	vocabed_map_setup(vocabed);
 	vocabed_repaint_req(vocabed);
 
 	*rvocabed = vocabed;
@@ -242,19 +209,15 @@ error:
  */
 int vocabed_save(vocabed_t *vocabed, FILE *f)
 {
-	int rc;
-
-	rc = map_save(vocabed->map, f);
-	if (rc != 0) {
-		printf("Error saving map.\n");
-		return EIO;
-	}
-
+	(void) vocabed;
+	(void) f;
 	return 0;
 }
 
 static void key_press(vocabed_t *vocabed, SDL_Scancode scancode)
 {
+	(void) vocabed;
+
 	switch (scancode) {
 	default:
 		break;
@@ -266,17 +229,14 @@ void vocabed_event(vocabed_t *vocabed, SDL_Event *e, gfx_t *gfx)
 	SDL_KeyboardEvent *ke;
 	SDL_MouseButtonEvent *me;
 
-	(void) map_event(vocabed->map, e);
+	(void) gfx;
+
+	(void) mapview_event(vocabed->mapview, e);
 	(void) wordlist_event(vocabed->verbs, e);
 
 	switch (e->type) {
-	case SDL_QUIT:
-		vocabed->quit = true;
-		break;
 	case SDL_KEYDOWN:
 		ke = (SDL_KeyboardEvent *) e;
-		if (ke->keysym.scancode == SDL_SCANCODE_ESCAPE)
-			vocabed->quit = true;
 		key_press(vocabed, ke->keysym.scancode);
 		break;
 	case SDL_MOUSEBUTTONDOWN:
@@ -292,12 +252,10 @@ void vocabed_event(vocabed_t *vocabed, SDL_Event *e, gfx_t *gfx)
  * @param x Tile X coordinate
  * @param y Tile Y coordinate
  */
-static void vocabed_map_cb(void *arg, int x, int y)
+static void vocabed_mapview_cb(void *arg, int x, int y)
 {
 	vocabed_t *vocabed = (vocabed_t *)arg;
-	printf("vocabed_map_cb(%d,%d)\n", x, y);
-
-	vocabed->map->tile[x][y] = 0;
+	printf("vocabed_mapview_cb(%d,%d)\n", x, y);
 
 	vocabed_repaint_req(vocabed);
 }
@@ -315,14 +273,10 @@ static void vocabed_verbs_cb(void *arg, void *earg)
  *
  * @param vocabed Map editor
  */
-static int vocabed_map_setup(vocabed_t *vocabed)
+static void vocabed_map_setup(vocabed_t *vocabed)
 {
-	map_set_orig(vocabed->map, 0, 88);
-	map_set_tile_size(vocabed->map, 32, 32);
-	map_set_tile_margins(vocabed->map, 4, 4);
-	map_set_cb(vocabed->map, vocabed_map_cb, vocabed);
-
-	return map_load_tile_img(vocabed->map, map_tile_files);
+	mapview_set_orig(vocabed->mapview, 0, 88);
+	mapview_set_cb(vocabed->mapview, vocabed_mapview_cb, vocabed);
 }
 
 /** Destroy map editor.
@@ -331,8 +285,8 @@ static int vocabed_map_setup(vocabed_t *vocabed)
  */
 void vocabed_destroy(vocabed_t *vocabed)
 {
-	if (vocabed->map != NULL)
-		map_destroy(vocabed->map);
+	if (vocabed->mapview != NULL)
+		mapview_destroy(vocabed->mapview);
 	if (vocabed->verbs != NULL)
 		wordlist_destroy(vocabed->verbs);
 	free(vocabed);

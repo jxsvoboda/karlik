@@ -20,38 +20,37 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef VOCABED_H
-#define VOCABED_H
+#ifndef MAPVIEW_H
+#define MAPVIEW_H
 
 #include <SDL.h>
-#include <stdbool.h>
 #include <stdio.h>
-#include "gfx.h"
-#include "mapview.h"
-#include "toolbar.h"
-#include "wordlist.h"
+#include "map.h"
 
-typedef struct {
-	void (*repaint)(void *);
-} vocabed_cb_t;
+typedef void (*mapview_cb_t)(void *arg, int x, int y);
 
-/** Map editor */
+/** Map view
+ *
+ * Displays a map and allows interacting with it
+ */
 typedef struct {
-	/** Map view */
-	mapview_t *mapview;
-	/** Verb view */
-	wordlist_t *verbs;
-	/** Callbacks */
-	vocabed_cb_t *cb;
+	/** Map */
+	map_t *map;
+	/** X coordinate of top-left corner on the screen */
+	int orig_x;
+	/** Y coordinate of top-left conrer on the screen */
+	int orig_y;
+	/** Called when user clicks on a map tile */
+	mapview_cb_t cb;
 	/** Callback argument */
-	void *arg;
-} vocabed_t;
+	void *cb_arg;
+} mapview_t;
 
-extern int vocabed_new(map_t *, vocabed_cb_t *, void *, vocabed_t **);
-extern int vocabed_load(map_t *, FILE *, vocabed_cb_t *, void *, vocabed_t **);
-extern void vocabed_destroy(vocabed_t *);
-extern void vocabed_display(vocabed_t *, gfx_t *gfx);
-extern int vocabed_save(vocabed_t *, FILE *);
-extern void vocabed_event(vocabed_t *, SDL_Event *, gfx_t *);
+extern int mapview_create(map_t *, mapview_t **);
+extern void mapview_destroy(mapview_t *);
+extern void mapview_set_orig(mapview_t *, int, int);
+extern void mapview_set_cb(mapview_t *, mapview_cb_t, void *);
+extern void mapview_draw(mapview_t *, gfx_t *);
+extern bool mapview_event(mapview_t *, SDL_Event *);
 
 #endif

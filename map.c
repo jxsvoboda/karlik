@@ -24,13 +24,14 @@
  * City map
  */
 
+#include <assert.h>
 #include <errno.h>
 #include <SDL.h>
 #include <stdbool.h>
 #include "gfx.h"
 #include "map.h"
 
-/** Create icon menu.
+/** Create map.
  *
  * @param width in tiles
  * @param height in tiles
@@ -69,7 +70,7 @@ error:
 
 /** Destroy map.
  *
- * @param map Icon menu
+ * @param map Map
  */
 void map_destroy(map_t *map)
 {
@@ -94,17 +95,6 @@ void map_destroy(map_t *map)
 	free(map);
 }
 
-/** Set map origin.
- *
- * @param x X origin
- * @param y Y origin
- */
-void map_set_orig(map_t *map, int x, int y)
-{
-	map->orig_x = x;
-	map->orig_y = y;
-}
-
 /** Set map tile size.
  *
  * @param w Tile width
@@ -125,18 +115,6 @@ void map_set_tile_margins(map_t *map, int x, int y)
 {
 	map->margin_x = x;
 	map->margin_y = y;
-}
-
-/** Set map callback.
- *
- * @param map Map
- * @param cb Callback
- * @param arg Callback argument
- */
-void map_set_cb(map_t *map, map_cb_t cb, void *arg)
-{
-	map->cb = cb;
-	map->cb_arg = arg;
 }
 
 /** Load tile images.
@@ -181,81 +159,38 @@ error:
 	return EIO;
 }
 
-/** Draw map.
+/** Set map tile.
  *
- * @param map Icon menu
- * @param gfx Graphics object to draw to
+ * @param map Map
+ * @param x X tile coordinate
+ * @param y Y tile coordinate
+ * @param ttype Tile type
  */
-void map_draw(map_t *map, gfx_t *gfx)
+void map_set(map_t *map, int x, int y, map_tile_t ttype)
 {
-	uint32_t color;
-	int x, y;
-	int dx, dy;
-	map_tile_t ttype;
-	SDL_Surface *surf;
-	SDL_Rect drect;
+	assert(x >= 0);
+	assert(y >= 0);
+	assert(x < map->width);
+	assert(y < map->height);
 
-	surf = SDL_GetWindowSurface(gfx->win);
-
-	for (x = 0; x < map->width; x++) {
-		dx = map->orig_x + (1 + x) * map->margin_x + x * map->tile_w;
-
-		for (y = 0; y < map->height; y++) {
-			dy = map->orig_y + (1 + y) * map->margin_y +
-			    y * map->tile_h;
-
-			color = gfx_rgb(gfx, 128 + 128 * map->tile[x][y], 0, 0);
-			gfx_rect(gfx, dx, dy, map->tile_w, map->tile_h, color);
-			drect.x = dx;
-			drect.y = dy;
-			drect.w = map->tile_w;
-			drect.h = map->tile_h;
-
-			ttype = map->tile[x][y];
-
-			if ((int)ttype < map->nimages)
-				SDL_BlitScaled(map->image[ttype], NULL, surf, &drect);
-		}
-	}
+	map->tile[x][y] = ttype;
 }
 
-/** Process input event in map.
+/** Get map tile.
  *
- * @param map Icon menu
- * @param event Event
- * @return @c true if event is claimed
+ * Get map tile contents. If the coordinates lie outside of the map,
+ * return 'wall'.
+ *
+ * @param map Map
+ * @param x X tile coordinate
+ * @param y Y tile coordinate
  */
-bool map_event(map_t *map, SDL_Event *event)
+map_tile_t map_get(map_t *map, int x, int y)
 {
-	SDL_Rect drect;
-	SDL_MouseButtonEvent *mbe;
-	int x, y;
+	if (x < 0 && y < 0 && x >= map->width && y >= map->height)
+		return mapt_wall;
 
-	drect.w = map->tile_w;
-	drect.h = map->tile_h;
-
-	for (x = 0; x < map->width; x++) {
-		drect.x = map->orig_x + (x + 1) * map->margin_x +
-		    x * map->tile_w;
-
-		for (y = 0; y < map->height; y++) {
-			drect.y = map->orig_y + (y + 1) * map->margin_y +
-			    y * map->tile_h;
-
-			if (event->type == SDL_MOUSEBUTTONDOWN) {
-				mbe = (SDL_MouseButtonEvent *)event;
-				if (mbe->x >= drect.x && mbe->y >= drect.y &&
-				    mbe->x < drect.x + drect.w &&
-				    mbe->y < drect.y + drect.h) {
-					if (map->cb != NULL)
-						map->cb(map->cb_arg, x, y);
-					return true;
-				}
-			}
-		}
-	}
-
-	return false;
+	return map->tile[x][y];
 }
 
 /** Load map from file.
@@ -290,7 +225,7 @@ int map_load(FILE *f, map_t **rmap)
 			if (tile < 0 || tile > mapt_robot)
 				goto error;
 
-			map->tile[x][y] = (map_tile_t) tile;
+			map_set(map, x, y, (map_tile_t) tile);
 		}
 	}
 
@@ -317,7 +252,7 @@ int map_save(map_t *map, FILE *f)
 
 	for (y = 0; y < map->height; y++) {
 		for (x = 0; x < map->width; x++) {
-			rv = fprintf(f, "%d%c", map->tile[x][y],
+			rv = fprintf(f, "%d%c", map_get(map, x, y),
 			    x < map->width - 1 ? ' ' : '\n');
 			if (rv < 0)
 				return EIO;

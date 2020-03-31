@@ -27,7 +27,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include "gfx.h"
-#include "map.h"
+#include "mapview.h"
 #include "toolbar.h"
 
 typedef struct {
@@ -36,8 +36,8 @@ typedef struct {
 
 /** Map editor */
 typedef struct {
-	/** Map */
-	map_t *map;
+	/** Map view */
+	mapview_t *mapview;
 	/** Selected tile type */
 	map_tile_t ttype;
 	/** Map editor toolbar */
@@ -50,8 +50,8 @@ typedef struct {
 	void *arg;
 } mapedit_t;
 
-extern int mapedit_new(mapedit_cb_t *, void *, mapedit_t **);
-extern int mapedit_load(FILE *, mapedit_cb_t *, void *, mapedit_t **);
+extern int mapedit_new(map_t *, mapedit_cb_t *, void *, mapedit_t **);
+extern int mapedit_load(map_t *, FILE *, mapedit_cb_t *, void *, mapedit_t **);
 extern void mapedit_destroy(mapedit_t *);
 extern void mapedit_display(mapedit_t *, gfx_t *gfx);
 extern int mapedit_save(mapedit_t *, FILE *);

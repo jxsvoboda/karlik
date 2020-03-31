@@ -33,6 +33,7 @@ sources = \
 	main.c \
 	map.c \
 	mapedit.c \
+	mapview.c \
 	toolbar.c \
 	vocabed.c \
 	wordlist.c

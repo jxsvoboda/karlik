@@ -52,17 +52,7 @@ static const char *map_tb_files[] = {
 	NULL
 };
 
-static const char *map_tile_files[] = {
-	"img/tile/empty.bmp",
-	"img/tile/wall.bmp",
-	"img/tile/white.bmp",
-	"img/tile/grey.bmp",
-	"img/tile/black.bmp",
-	"img/tile/robot.bmp",
-	NULL
-};
-
-static int mapedit_map_setup(mapedit_t *);
+static void mapedit_mapview_setup(mapedit_t *);
 static void mapedit_map_toolbar_cb(void *, int);
 static int mapedit_mapt_to_toolbar_idx(map_tile_t);
 
@@ -73,7 +63,7 @@ static int mapedit_mapt_to_toolbar_idx(map_tile_t);
  */
 void mapedit_display(mapedit_t *mapedit, gfx_t *gfx)
 {
-	map_draw(mapedit->map, gfx);
+	mapview_draw(mapedit->mapview, gfx);
 	toolbar_draw(mapedit->map_tb, gfx);
 }
 
@@ -88,13 +78,13 @@ static void mapedit_repaint_req(mapedit_t *mapedit)
 
 /** Create map editor.
  *
+ * @param map Map
  * @param cb Callbacks
  * @param arg Callback arguments
- * @param map Map
  * @param rmapedit Place to store pointer to new map editor
  * @return Zero on success or an error code
  */
-static int mapedit_create(mapedit_cb_t *cb, void *arg, map_t *map,
+static int mapedit_create(map_t *map, mapedit_cb_t *cb, void *arg,
     mapedit_t **rmapedit)
 {
 	mapedit_t *mapedit;
@@ -106,9 +96,13 @@ static int mapedit_create(mapedit_cb_t *cb, void *arg, map_t *map,
 
 	mapedit->ttype = mapt_wall;
 
+	rc = mapview_create(map, &mapedit->mapview);
+	if (rc != 0)
+		goto error;
+
 	rc = toolbar_create(map_tb_files, &mapedit->map_tb);
 	if (rc != 0) {
-		printf("Error creating menu.\n");
+		printf("Error creating toolbar.\n");
 		goto error;
 	}
 
@@ -118,7 +112,6 @@ static int mapedit_create(mapedit_cb_t *cb, void *arg, map_t *map,
 	toolbar_select(mapedit->map_tb,
 	    mapedit_mapt_to_toolbar_idx(mapedit->ttype));
 
-	mapedit->map = map;
 	mapedit->cb = cb;
 	mapedit->arg = arg;
 
@@ -129,35 +122,24 @@ error:
 	return rc;
 }
 
-/** Create new, empty map.
+/** Create new map editor.
  *
+ * @param map Map
  * @param cb Callbacks
  * @param arg Callback arguments
  * @param rmapedit Place to store pointer to new map editor
  * @return Zero on success or an error code
  */
-int mapedit_new(mapedit_cb_t *cb, void *arg, mapedit_t **rmapedit)
+int mapedit_new(map_t *map, mapedit_cb_t *cb, void *arg, mapedit_t **rmapedit)
 {
-	map_t *map;
 	mapedit_t *mapedit;
 	int rc;
 
-	rc = map_create(8, 8, &map);
+	rc = mapedit_create(map, cb, arg, &mapedit);
 	if (rc != 0)
 		return rc;
 
-	rc = mapedit_create(cb, arg, map, &mapedit);
-	if (rc != 0) {
-		map_destroy(map);
-		return rc;
-	}
-
-	rc = mapedit_map_setup(mapedit);
-	if (rc != 0) {
-		mapedit_destroy(mapedit);
-		return rc;
-	}
-
+	mapedit_mapview_setup(mapedit);
 	mapedit_repaint_req(mapedit);
 
 	*rmapedit = mapedit;
@@ -166,15 +148,16 @@ int mapedit_new(mapedit_cb_t *cb, void *arg, mapedit_t **rmapedit)
 
 /** Load map editor.
  *
+ * @param map Map
  * @param f File
  * @param cb Callbacks
  * @param arg Callback arguments
  * @param rmapedit Place to store pointer to new map editor
  * @return Zero on success or an error code
  */
-int mapedit_load(FILE *f, mapedit_cb_t *cb, void *arg, mapedit_t **rmapedit)
+int mapedit_load(map_t *map, FILE *f, mapedit_cb_t *cb, void *arg,
+    mapedit_t **rmapedit)
 {
-	map_t *map = NULL;
 	mapedit_t *mapedit = NULL;
 	int rc;
 	int nitem;
@@ -186,13 +169,7 @@ int mapedit_load(FILE *f, mapedit_cb_t *cb, void *arg, mapedit_t **rmapedit)
 		goto error;
 	}
 
-	rc = map_load(f, &map);
-	if (rc != 0) {
-		rc = EIO;
-		goto error;
-	}
-
-	rc = mapedit_create(cb, arg, map, &mapedit);
+	rc = mapedit_create(map, cb, arg, &mapedit);
 	if (rc != 0) {
 		rc = ENOMEM;
 		goto error;
@@ -200,9 +177,7 @@ int mapedit_load(FILE *f, mapedit_cb_t *cb, void *arg, mapedit_t **rmapedit)
 
 	map = NULL;
 
-	rc = mapedit_map_setup(mapedit);
-	if (rc != 0)
-		goto error;
+	mapedit_mapview_setup(mapedit);
 
 	printf("ttype=%d\n", ttype);
 	if (ttype >= 0 && ttype <= mapt_robot)
@@ -218,8 +193,6 @@ int mapedit_load(FILE *f, mapedit_cb_t *cb, void *arg, mapedit_t **rmapedit)
 error:
 	if (mapedit != NULL)
 		mapedit_destroy(mapedit);
-	if (map != NULL)
-		map_destroy(map);
 	printf("Error loading map.\n");
 	return rc;
 }
@@ -232,17 +205,10 @@ error:
  */
 int mapedit_save(mapedit_t *mapedit, FILE *f)
 {
-	int rc;
 	int rv;
 
 	rv = fprintf(f, "%d\n", (int)mapedit->ttype);
 	if (rv < 0) {
-		printf("Error saving map.\n");
-		return EIO;
-	}
-
-	rc = map_save(mapedit->map, f);
-	if (rc != 0) {
 		printf("Error saving map.\n");
 		return EIO;
 	}
@@ -252,6 +218,8 @@ int mapedit_save(mapedit_t *mapedit, FILE *f)
 
 static void key_press(mapedit_t *mapedit, SDL_Scancode scancode)
 {
+	(void) mapedit;
+
 	switch (scancode) {
 	default:
 		break;
@@ -263,10 +231,12 @@ void mapedit_event(mapedit_t *mapedit, SDL_Event *e, gfx_t *gfx)
 	SDL_KeyboardEvent *ke;
 	SDL_MouseButtonEvent *me;
 
+	(void) gfx;
+
 	if (toolbar_event(mapedit->map_tb, e))
 		return;
 
-	(void) map_event(mapedit->map, e);
+	(void) mapview_event(mapedit->mapview, e);
 
 	switch (e->type) {
 	case SDL_KEYDOWN:
@@ -346,28 +316,24 @@ static int mapedit_mapt_to_toolbar_idx(map_tile_t mapt)
  * @param x Tile X coordinate
  * @param y Tile Y coordinate
  */
-static void mapedit_map_cb(void *arg, int x, int y)
+static void mapedit_mapview_cb(void *arg, int x, int y)
 {
 	mapedit_t *mapedit = (mapedit_t *)arg;
 	printf("mapedit_map_cb(%d,%d)\n", x, y);
 
-	mapedit->map->tile[x][y] = mapedit->ttype;
+	map_set(mapedit->mapview->map, x, y, mapedit->ttype);
 
 	mapedit_repaint_req(mapedit);
 }
 
-/** Set up new map for use.
+/** Set up new map view for use.
  *
  * @param mapedit Map editor
  */
-static int mapedit_map_setup(mapedit_t *mapedit)
+static void mapedit_mapview_setup(mapedit_t *mapedit)
 {
-	map_set_orig(mapedit->map, 0, 88);
-	map_set_tile_size(mapedit->map, 32, 32);
-	map_set_tile_margins(mapedit->map, 4, 4);
-	map_set_cb(mapedit->map, mapedit_map_cb, mapedit);
-
-	return map_load_tile_img(mapedit->map, map_tile_files);
+	mapview_set_orig(mapedit->mapview, 0, 88);
+	mapview_set_cb(mapedit->mapview, mapedit_mapview_cb, mapedit);
 }
 
 /** Destroy map editor.
@@ -378,7 +344,7 @@ void mapedit_destroy(mapedit_t *mapedit)
 {
 	if (mapedit->map_tb != NULL)
 		toolbar_destroy(mapedit->map_tb);
-	if (mapedit->map != NULL)
-		map_destroy(mapedit->map);
+	if (mapedit->mapview != NULL)
+		mapview_destroy(mapedit->mapview);
 	free(mapedit);
 }

@@ -44,6 +44,16 @@ static const char *main_tb_files[] = {
 	NULL
 };
 
+static const char *map_tile_files[] = {
+	"img/tile/empty.bmp",
+	"img/tile/wall.bmp",
+	"img/tile/white.bmp",
+	"img/tile/grey.bmp",
+	"img/tile/black.bmp",
+	"img/tile/robot.bmp",
+	NULL
+};
+
 static mapedit_cb_t karlik_mapedit_cb = {
 	.repaint = karlik_cb_repaint
 };
@@ -83,22 +93,47 @@ static void karlik_display(karlik_t *karlik, gfx_t *gfx)
 	toolbar_draw(karlik->main_tb, gfx);
 }
 
-/** Create new Karlik workspace.
+/** Set up map for use (common between load and new)
  *
- * @param gfx Graphics
- * @param karlik Map editor
- * @return Zero on success or an error code
+ * @param karlik Karlik
  */
-static int karlik_new(gfx_t *gfx, karlik_t *karlik)
+static int karlik_map_setup(karlik_t *karlik)
 {
 	int rc;
 
-	rc = mapedit_new(&karlik_mapedit_cb, (void *)karlik,
+	rc = map_load_tile_img(karlik->map, map_tile_files);
+	if (rc != 0)
+		return rc;
+
+	map_set_tile_size(karlik->map, 32, 32);
+	map_set_tile_margins(karlik->map, 4, 4);
+
+	return 0;
+}
+
+/** Create new Karlik workspace.
+ *
+ * @param karlik Map editor
+ * @return Zero on success or an error code
+ */
+static int karlik_new(karlik_t *karlik)
+{
+	int rc;
+
+	rc = map_create(8, 8, &karlik->map);
+	if (rc != 0)
+		return rc;
+
+	rc = karlik_map_setup(karlik);
+	if (rc != 0)
+		return rc;
+
+	rc = mapedit_new(karlik->map, &karlik_mapedit_cb, (void *)karlik,
 	    &karlik->mapedit);
 	if (rc != 0)
 		return rc;
 
-	rc = vocabed_new(&karlik_vocabed_cb, (void *)karlik,
+	rc = vocabed_new(karlik->map, &karlik_vocabed_cb, (void *)karlik,
 	    &karlik->vocabed);
 	if (rc != 0)
 		return rc;
@@ -108,21 +143,26 @@ static int karlik_new(gfx_t *gfx, karlik_t *karlik)
 
 /** Load Karlik state.
  *
- * @param gfx Graphics
  * @param mapedit Map editor
  */
-static int karlik_load(gfx_t *gfx, karlik_t *karlik)
+static int karlik_load(karlik_t *karlik)
 {
 	FILE *f;
 	int rc;
 	int nitem;
 	int kmode;
-
-	karlik->gfx = gfx;
-
+ 
 	f = fopen("karlik.dat", "r");
 	if (f == NULL)
 		return EIO;
+
+	rc = map_load(f, &karlik->map);
+	if (rc != 0)
+		goto error;
+
+	rc = karlik_map_setup(karlik);
+	if (rc != 0)
+		return rc;
 
 	nitem = fscanf(f, "%d\n", &kmode);
 	if (nitem != 1)
@@ -132,14 +172,14 @@ static int karlik_load(gfx_t *gfx, karlik_t *karlik)
 	if (kmode >= 0 && kmode <= km_vocab)
 		karlik->kmode = kmode;
 
-	rc = mapedit_load(f, &karlik_mapedit_cb, (void *)karlik,
+	rc = mapedit_load(karlik->map, f, &karlik_mapedit_cb, (void *)karlik,
 	    &karlik->mapedit);
 	if (rc != 0) {
 		rc = EIO;
 		goto error;
 	}
 
-	rc = vocabed_load(f, &karlik_vocabed_cb, (void *)karlik,
+	rc = vocabed_load(karlik->map, f, &karlik_vocabed_cb, (void *)karlik,
 	    &karlik->vocabed);
 	if (rc != 0) {
 		rc = EIO;
@@ -168,39 +208,44 @@ int karlik_save(karlik_t *karlik)
 	if (f == NULL)
 		return EIO;
 
+	rc = map_save(karlik->map, f);
+	if (rc != 0)
+		goto error;
+
 	rv = fprintf(f, "%d\n", karlik->kmode);
 	if (rv < 0) {
-		fclose(f);
-		return EIO;
+		rc = EIO;
+		goto error;
 	}
 
 	rc = mapedit_save(karlik->mapedit, f);
 	if (rc != 0) {
 		printf("Error saving map editor.\n");
-		fclose(f);
-		return EIO;
+		rc = EIO;
+		goto error;
 	}
 
 	rc = vocabed_save(karlik->vocabed, f);
 	if (rc != 0) {
 		printf("Error saving vocabulary editor.\n");
-		fclose(f);
-		return EIO;
+		rc = EIO;
+		goto error;
 	}
 
 	if (fclose(f) < 0)
 		return EIO;
 
 	return 0;
+error:
+	fclose(f);
+	return rc;
 }
 
 static void key_press(karlik_t *karlik, SDL_Scancode scancode)
 {
-	gfx_t *gfx = karlik->gfx;
-
 	switch (scancode) {
 	case SDL_SCANCODE_L:
-		karlik_load(gfx, karlik);
+		karlik_load(karlik);
 		break;
 	case SDL_SCANCODE_S:
 		karlik_save(karlik);
@@ -302,6 +347,7 @@ int karlik_create(gfx_t *gfx, karlik_t **rkarlik)
 	if (karlik == NULL)
 		return ENOMEM;
 
+	karlik->gfx = gfx;
 	karlik->quit = false;
 	karlik->kmode = km_map;
 
@@ -314,9 +360,9 @@ int karlik_create(gfx_t *gfx, karlik_t **rkarlik)
 	toolbar_set_origin(karlik->main_tb, 8, 8);
 	toolbar_set_cb(karlik->main_tb, karlik_main_toolbar_cb, karlik);
 
-	rc = karlik_load(gfx, karlik);
+	rc = karlik_load(karlik);
 	if (rc != 0) {
-		rc = karlik_new(gfx, karlik);
+		rc = karlik_new(karlik);
 		if (rc != 0)
 			goto error;
 	}
@@ -325,7 +371,6 @@ int karlik_create(gfx_t *gfx, karlik_t **rkarlik)
 	toolbar_select(karlik->main_tb,
 	    karlik_mode_to_toolbar_idx(karlik->kmode));
 
-	karlik->gfx = gfx;
 	karlik_display(karlik, gfx);
 	gfx_update(gfx);
 
@@ -344,7 +389,11 @@ void karlik_destroy(karlik_t *karlik)
 {
 	if (karlik->main_tb != NULL)
 		toolbar_destroy(karlik->main_tb);
+	if (karlik->map != NULL)
+		map_destroy(karlik->map);
 	if (karlik->mapedit != NULL)
 		mapedit_destroy(karlik->mapedit);
+	if (karlik->vocabed != NULL)
+		vocabed_destroy(karlik->vocabed);
 	free(karlik);
 }

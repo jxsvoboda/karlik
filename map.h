@@ -26,14 +26,18 @@
 #include <SDL.h>
 #include <stdio.h>
 
-typedef void (*map_cb_t)(void *arg, int x, int y);
-
 typedef enum {
+	/** Empty tile */
 	mapt_none,
+	/** Wall */
 	mapt_wall,
+	/** White tag */
 	mapt_wtag,
+	/** Grey tag */
 	mapt_gtag,
+	/** Black tag */
 	mapt_btag,
+	/** Robot */
 	mapt_robot
 } map_tile_t;
 
@@ -49,18 +53,10 @@ typedef struct {
 	int tile_w;
 	/** Tile height */
 	int tile_h;
-	/** X coordinate of top-left corner on the screen */
-	int orig_x;
-	/** Y coordinate of top-left conrer on the screen */
-	int orig_y;
 	/** Margin to the left of each column */
 	int margin_x;
 	/** Margin above each row */
 	int margin_y;
-	/** Called when user clicks on a map tile */
-	map_cb_t cb;
-	/** Callback argument */
-	void *cb_arg;
 	/** Tile images */
 	SDL_Surface **image;
 	/** Number of images */
@@ -69,14 +65,12 @@ typedef struct {
 
 extern int map_create(int, int, map_t **);
 extern void map_destroy(map_t *);
-extern void map_set_orig(map_t *, int, int);
 extern void map_set_tile_size(map_t *, int, int);
 extern void map_set_tile_margins(map_t *, int, int);
-extern void map_set_cb(map_t *, map_cb_t, void *);
+extern void map_set(map_t *, int, int, map_tile_t);
+extern map_tile_t map_get(map_t *, int, int);
 extern int map_load_tile_img(map_t *, const char **);
 extern int map_load(FILE *, map_t **);
 extern int map_save(map_t *, FILE *);
-extern void map_draw(map_t *, gfx_t *);
-extern bool map_event(map_t *, SDL_Event *);
 
 #endif
