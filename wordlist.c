@@ -193,6 +193,11 @@ bool wordlist_event(wordlist_t *wordlist, SDL_Event *event)
 	return false;
 }
 
+/** Get first wordlist entry.
+ *
+ * @param wordlist Wordlist
+ * @return First entry or @c NULL if the list is empty
+ */
 static wordlist_entry_t *wordlist_first(wordlist_t *wordlist)
 {
 	link_t *link;
@@ -204,6 +209,11 @@ static wordlist_entry_t *wordlist_first(wordlist_t *wordlist)
 	return list_get_instance(link, wordlist_entry_t, lwlist);
 }
 
+/** Get next wordlist entry.
+ *
+ * @param cur Current etnry
+ * @return Next entry or @c NULL if @a cur is the last
+ */
 static wordlist_entry_t *wordlist_next(wordlist_entry_t *cur)
 {
 	link_t *link;
