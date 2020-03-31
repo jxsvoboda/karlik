@@ -62,6 +62,9 @@ To start Karlík, just type:
 
 Acknowledgements
 ----------------
+I'd like to thank Richard E. Pattis for creating our beloved friend
+Karel the Robot.
+
 I'd like to give a nod to the best book on programming ever written anywhere
 in the multiverse
 
