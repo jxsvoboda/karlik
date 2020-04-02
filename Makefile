@@ -34,6 +34,8 @@ sources = \
 	map.c \
 	mapedit.c \
 	mapview.c \
+	robot.c \
+	robots.c \
 	toolbar.c \
 	vocabed.c \
 	wordlist.c

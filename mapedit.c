@@ -32,6 +32,7 @@
 #include "gfx.h"
 #include "map.h"
 #include "mapedit.h"
+#include "robots.h"
 #include "toolbar.h"
 
 enum {
@@ -79,13 +80,14 @@ static void mapedit_repaint_req(mapedit_t *mapedit)
 /** Create map editor.
  *
  * @param map Map
+ * @param robots Robots
  * @param cb Callbacks
  * @param arg Callback arguments
  * @param rmapedit Place to store pointer to new map editor
  * @return Zero on success or an error code
  */
-static int mapedit_create(map_t *map, mapedit_cb_t *cb, void *arg,
-    mapedit_t **rmapedit)
+static int mapedit_create(map_t *map, robots_t *robots, mapedit_cb_t *cb,
+    void *arg, mapedit_t **rmapedit)
 {
 	mapedit_t *mapedit;
 	int rc;
@@ -99,6 +101,8 @@ static int mapedit_create(map_t *map, mapedit_cb_t *cb, void *arg,
 	rc = mapview_create(map, &mapedit->mapview);
 	if (rc != 0)
 		goto error;
+
+	mapedit->robots = robots;
 
 	rc = toolbar_create(map_tb_files, &mapedit->map_tb);
 	if (rc != 0) {
@@ -125,17 +129,19 @@ error:
 /** Create new map editor.
  *
  * @param map Map
+ * @param robots Robots
  * @param cb Callbacks
  * @param arg Callback arguments
  * @param rmapedit Place to store pointer to new map editor
  * @return Zero on success or an error code
  */
-int mapedit_new(map_t *map, mapedit_cb_t *cb, void *arg, mapedit_t **rmapedit)
+int mapedit_new(map_t *map, robots_t *robots, mapedit_cb_t *cb, void *arg,
+    mapedit_t **rmapedit)
 {
 	mapedit_t *mapedit;
 	int rc;
 
-	rc = mapedit_create(map, cb, arg, &mapedit);
+	rc = mapedit_create(map, robots, cb, arg, &mapedit);
 	if (rc != 0)
 		return rc;
 
@@ -149,14 +155,15 @@ int mapedit_new(map_t *map, mapedit_cb_t *cb, void *arg, mapedit_t **rmapedit)
 /** Load map editor.
  *
  * @param map Map
+ * @param robots Robots
  * @param f File
  * @param cb Callbacks
  * @param arg Callback arguments
  * @param rmapedit Place to store pointer to new map editor
  * @return Zero on success or an error code
  */
-int mapedit_load(map_t *map, FILE *f, mapedit_cb_t *cb, void *arg,
-    mapedit_t **rmapedit)
+int mapedit_load(map_t *map, robots_t *robots, FILE *f, mapedit_cb_t *cb,
+    void *arg, mapedit_t **rmapedit)
 {
 	mapedit_t *mapedit = NULL;
 	int rc;
@@ -169,7 +176,7 @@ int mapedit_load(map_t *map, FILE *f, mapedit_cb_t *cb, void *arg,
 		goto error;
 	}
 
-	rc = mapedit_create(map, cb, arg, &mapedit);
+	rc = mapedit_create(map, robots, cb, arg, &mapedit);
 	if (rc != 0) {
 		rc = ENOMEM;
 		goto error;
@@ -319,9 +326,18 @@ static int mapedit_mapt_to_toolbar_idx(map_tile_t mapt)
 static void mapedit_mapview_cb(void *arg, int x, int y)
 {
 	mapedit_t *mapedit = (mapedit_t *)arg;
+	map_tile_t oldt;
+
 	printf("mapedit_map_cb(%d,%d)\n", x, y);
 
+	oldt = map_get(mapedit->mapview->map, x, y);
 	map_set(mapedit->mapview->map, x, y, mapedit->ttype);
+
+	if (oldt == mapt_robot && mapedit->ttype != mapt_robot) {
+		robots_remove(mapedit->robots, x, y);
+	} else if (oldt != mapt_robot && mapedit->ttype == mapt_robot) {
+		(void) robots_add(mapedit->robots, x, y);
+	}
 
 	mapedit_repaint_req(mapedit);
 }

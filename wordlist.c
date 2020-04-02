@@ -59,7 +59,7 @@ int wordlist_create(wordlist_t **rwordlist)
 
 /** Set wordlist origin.
  *
- * @param wordlist Icon menu
+ * @param wordlist Wordlist
  * @param x X coordinate
  * @param y Y coordinate
  */
@@ -83,7 +83,7 @@ void wordlist_set_cb(wordlist_t *wordlist, wordlist_cb_t cb, void *arg)
 
 /** Destroy wordlist.
  *
- * @param wordlist Icon menu
+ * @param wordlist Wordlist
  */
 void wordlist_destroy(wordlist_t *wordlist)
 {
@@ -126,7 +126,7 @@ int wordlist_add(wordlist_t *wordlist, SDL_Surface *icon, void *arg)
 
 /** Draw wordlist.
  *
- * @param wordlist Icon menu
+ * @param wordlist Wordlist
  * @param gfx Graphics object to draw to
  */
 void wordlist_draw(wordlist_t *wordlist, gfx_t *gfx)
@@ -155,7 +155,7 @@ void wordlist_draw(wordlist_t *wordlist, gfx_t *gfx)
 
 /** Process input event in wordlist.
  *
- * @param wordlist Icon menu
+ * @param wordlist Wordlist
  * @param event Event
  * @return @c true if event is claimed
  */
@@ -211,7 +211,7 @@ static wordlist_entry_t *wordlist_first(wordlist_t *wordlist)
 
 /** Get next wordlist entry.
  *
- * @param cur Current etnry
+ * @param cur Current entry
  * @return Next entry or @c NULL if @a cur is the last
  */
 static wordlist_entry_t *wordlist_next(wordlist_entry_t *cur)

@@ -128,8 +128,12 @@ static int karlik_new(karlik_t *karlik)
 	if (rc != 0)
 		return rc;
 
-	rc = mapedit_new(karlik->map, &karlik_mapedit_cb, (void *)karlik,
-	    &karlik->mapedit);
+	rc = robots_create(karlik->map, &karlik->robots);
+	if (rc != 0)
+		return rc;
+
+	rc = mapedit_new(karlik->map, karlik->robots, &karlik_mapedit_cb,
+	    (void *)karlik, &karlik->mapedit);
 	if (rc != 0)
 		return rc;
 
@@ -151,7 +155,7 @@ static int karlik_load(karlik_t *karlik)
 	int rc;
 	int nitem;
 	int kmode;
- 
+
 	f = fopen("karlik.dat", "r");
 	if (f == NULL)
 		return EIO;
@@ -164,6 +168,10 @@ static int karlik_load(karlik_t *karlik)
 	if (rc != 0)
 		return rc;
 
+	rc = robots_load(f, karlik->map, &karlik->robots);
+	if (rc != 0)
+		return rc;
+
 	nitem = fscanf(f, "%d\n", &kmode);
 	if (nitem != 1)
 		goto error;
@@ -172,8 +180,8 @@ static int karlik_load(karlik_t *karlik)
 	if (kmode >= 0 && kmode <= km_vocab)
 		karlik->kmode = kmode;
 
-	rc = mapedit_load(karlik->map, f, &karlik_mapedit_cb, (void *)karlik,
-	    &karlik->mapedit);
+	rc = mapedit_load(karlik->map, karlik->robots, f, &karlik_mapedit_cb,
+	    (void *)karlik, &karlik->mapedit);
 	if (rc != 0) {
 		rc = EIO;
 		goto error;
@@ -209,6 +217,10 @@ int karlik_save(karlik_t *karlik)
 		return EIO;
 
 	rc = map_save(karlik->map, f);
+	if (rc != 0)
+		goto error;
+
+	rc = robots_save(karlik->robots, f);
 	if (rc != 0)
 		goto error;
 

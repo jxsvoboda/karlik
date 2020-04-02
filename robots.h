@@ -20,48 +20,28 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef KARLIK_H
-#define KARLIK_H
+#ifndef ROBOTS_H
+#define ROBOTS_H
 
-#include <SDL.h>
-#include <stdbool.h>
-#include "gfx.h"
-#include "mapedit.h"
-#include "robots.h"
-#include "toolbar.h"
-#include "vocabed.h"
+#include <stdio.h>
+#include "adt/list.h"
+#include "map.h"
+#include "robot.h"
 
-/** Selected mode */
-typedef enum {
-	/** Map editing mode */
-	km_map,
-	/** Vocabulary mode */
-	km_vocab
-} karlik_mode_t;
-
-/** Karlik instance */
-typedef struct {
-	/** Selected tile type */
-	karlik_mode_t kmode;
-	/** Main toolbar */
-	toolbar_t *main_tb;
-	/** @c true to quit */
-	bool quit;
-	/** Graphics */
-	gfx_t *gfx;
-	/** Map */
+/** Robots */
+typedef struct robots {
+	/** Map used by robots */
 	map_t *map;
-	/** Robots */
-	robots_t *robots;
-	/** Map editor */
-	mapedit_t *mapedit;
-	/** Vocabulary editor */
-	vocabed_t *vocabed;
-} karlik_t;
+	/** List of robots (robot_t) */
+	list_t robots;
+} robots_t;
 
-extern int karlik_create(gfx_t *, karlik_t **);
-extern void karlik_destroy(karlik_t *);
-extern int karlik_save(karlik_t *);
-extern void karlik_event(karlik_t *, SDL_Event *, gfx_t *);
+extern int robots_create(map_t *, robots_t **);
+extern int robots_load(FILE *, map_t *, robots_t **);
+extern int robots_save(robots_t *, FILE *);
+extern void robots_destroy(robots_t *);
+extern int robots_add(robots_t *, int, int);
+extern void robots_remove(robots_t *, int, int);
+extern robot_t *robots_get(robots_t *, int, int);
 
 #endif
