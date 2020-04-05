@@ -91,10 +91,10 @@ void gfx_rect(gfx_t *gfx, int x, int y, int w, int h, uint32_t color)
 	SDL_Rect rect;
 
 	surf = SDL_GetWindowSurface(gfx->win);
-	rect.x = x;
-	rect.y = y;
-	rect.w = w;
-	rect.h = h;
+	rect.x = x * 2;
+	rect.y = y * 2;
+	rect.w = w * 2;
+	rect.h = h * 2;
 	SDL_FillRect(surf, &rect, color);
 }
 
@@ -200,8 +200,8 @@ void gfx_bmp_render(gfx_t *gfx, gfx_bmp_t *bmp, int x, int y)
 
 	surf = SDL_GetWindowSurface(gfx->win);
 
-	drect.x = x;
-	drect.y = y;
+	drect.x = x * 2;
+	drect.y = y * 2;
 	drect.w = bmp->surf->w * 2;
 	drect.h = bmp->surf->h * 2;
 
@@ -216,4 +216,29 @@ void gfx_bmp_render(gfx_t *gfx, gfx_bmp_t *bmp, int x, int y)
 void gfx_set_wnd_icon(gfx_t *gfx, gfx_bmp_t *icon)
 {
 	SDL_SetWindowIcon(gfx->win, icon->surf);
+}
+
+/** Wait for an event and return it.
+ *
+ * @param e Place to store event
+ * @return Non-zero on success, zero on failure
+ */
+int gfx_wait_event(SDL_Event *e)
+{
+	int rv;
+	SDL_MouseButtonEvent *mbe;
+
+	rv = SDL_WaitEvent(e);
+	if (rv == 0)
+		return 0;
+
+	/* Need to unscale screen coordinates */
+
+	if (e->type == SDL_MOUSEBUTTONDOWN) {
+		mbe = (SDL_MouseButtonEvent *)e;
+		mbe->x /= 2;
+		mbe->y /= 2;
+	}
+
+	return 1;
 }

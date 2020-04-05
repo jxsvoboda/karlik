@@ -31,8 +31,8 @@
 #include "toolbar.h"
 
 enum {
-	toolbar_hmargin = 4,
-	toolbar_frame_width = 2
+	toolbar_hmargin = 2,
+	toolbar_frame_width = 1
 };
 
 /** Create icon menu.
@@ -157,8 +157,8 @@ void toolbar_draw(toolbar_t *toolbar, gfx_t *gfx)
 
 	for (i = 0; i < toolbar->nentries; i++) {
 		x += toolbar_hmargin;
-		w = 2 * toolbar->icon[i]->w;
-		h = 2 * toolbar->icon[i]->h;
+		w = toolbar->icon[i]->w;
+		h = toolbar->icon[i]->h;
 
 		fx = x - toolbar_frame_width;
 		fy = y - toolbar_frame_width;
@@ -192,8 +192,8 @@ bool toolbar_event(toolbar_t *toolbar, SDL_Event *event)
 
 	for (i = 0; i < toolbar->nentries; i++) {
 		x += toolbar_hmargin;
-		w = 2 * toolbar->icon[i]->w;
-		h = 2 * toolbar->icon[i]->h;
+		w = toolbar->icon[i]->w;
+		h = toolbar->icon[i]->h;
 
 		if (event->type == SDL_MOUSEBUTTONDOWN) {
 			mbe = (SDL_MouseButtonEvent *)event;

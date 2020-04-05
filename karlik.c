@@ -116,8 +116,8 @@ static int karlik_map_setup(karlik_t *karlik)
 	if (rc != 0)
 		return rc;
 
-	map_set_tile_size(karlik->map, 32, 32);
-	map_set_tile_margins(karlik->map, 4, 4);
+	map_set_tile_size(karlik->map, 16, 16);
+	map_set_tile_margins(karlik->map, 2, 2);
 
 	return 0;
 }
@@ -137,8 +137,8 @@ static int karlik_robots_setup(karlik_t *karlik)
 		return rc;
 	}
 
-	robots_set_tile_size(karlik->robots, 36, 36);
-	robots_set_rel_pos(karlik->robots, -10, -32);
+	robots_set_tile_size(karlik->robots, 18, 18);
+	robots_set_rel_pos(karlik->robots, -5, -16);
 
 	return 0;
 }
@@ -409,7 +409,7 @@ int karlik_create(gfx_t *gfx, karlik_t **rkarlik)
 		goto error;
 	}
 
-	toolbar_set_origin(karlik->main_tb, 8, 8);
+	toolbar_set_origin(karlik->main_tb, 4, 4);
 	toolbar_set_cb(karlik->main_tb, karlik_main_toolbar_cb, karlik);
 
 	rc = karlik_load(karlik);

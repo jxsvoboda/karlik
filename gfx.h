@@ -49,5 +49,6 @@ extern void gfx_bmp_render(gfx_t *, gfx_bmp_t *, int, int);
 extern void gfx_set_wnd_icon(gfx_t *, gfx_bmp_t *);
 
 extern void gfx_update(gfx_t *);
+extern int gfx_wait_event(SDL_Event *);
 
 #endif

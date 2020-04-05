@@ -31,8 +31,8 @@
 #include "wordlist.h"
 
 enum {
-	wordlist_hmargin = 4,
-	wordlist_frame_width = 2
+	wordlist_hmargin = 2,
+	wordlist_frame_width = 1
 };
 
 static wordlist_entry_t *wordlist_first(wordlist_t *);
@@ -142,7 +142,7 @@ void wordlist_draw(wordlist_t *wordlist, gfx_t *gfx)
 		x += wordlist_hmargin;
 
 		gfx_bmp_render(gfx, entry->icon, x, y);
-		x += 2 * entry->icon->w + wordlist_hmargin;
+		x += entry->icon->w + wordlist_hmargin;
 
 		entry = wordlist_next(entry);
 	}
@@ -167,8 +167,8 @@ bool wordlist_event(wordlist_t *wordlist, SDL_Event *event)
 	entry = wordlist_first(wordlist);
 	while (entry != NULL) {
 		x += wordlist_hmargin;
-		w = 2 * entry->icon->w;
-		h = 2 * entry->icon->h;
+		w = entry->icon->w;
+		h = entry->icon->h;
 
 		if (event->type == SDL_MOUSEBUTTONDOWN) {
 			mbe = (SDL_MouseButtonEvent *)event;

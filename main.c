@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
 	if (rc != 0)
 		goto error;
 
-	while (!karlik->quit && SDL_WaitEvent(&e)) {
+	while (!karlik->quit && gfx_wait_event(&e)) {
 		karlik_event(karlik, &e, &gfx);
 	}
 

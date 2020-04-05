@@ -108,7 +108,7 @@ static int vocabed_create(map_t *map, robots_t *robots, vocabed_cb_t *cb,
 		goto error;
 	}
 
-	wordlist_set_origin(vocabed->verbs, 0, 428);
+	wordlist_set_origin(vocabed->verbs, 0, 214);
 	wordlist_set_cb(vocabed->verbs, vocabed_verbs_cb, vocabed);
 
 	cp = verb_icons;
@@ -299,7 +299,7 @@ static void vocabed_verbs_cb(void *arg, void *earg)
  */
 static void vocabed_map_setup(vocabed_t *vocabed)
 {
-	mapview_set_orig(vocabed->mapview, 0, 112);
+	mapview_set_orig(vocabed->mapview, 0, 56);
 	mapview_set_cb(vocabed->mapview, vocabed_mapview_cb, vocabed);
 }
 

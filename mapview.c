@@ -150,7 +150,7 @@ bool mapview_event(mapview_t *mapview, SDL_Event *event)
 				    mbe->x < x + w && mbe->y < y + h) {
 					if (mapview->cb != NULL) {
 						mapview->cb(mapview->cb_arg,
-						    x, y);
+						    tx, ty);
 					}
 					return true;
 				}

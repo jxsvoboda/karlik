@@ -36,11 +36,11 @@
 #include "toolbar.h"
 
 enum {
-	tile_xs = 32,
-	tile_ys = 32,
+	tile_xs = 16,
+	tile_ys = 16,
 
-	orig_x = 320,
-	orig_y = 240
+	orig_x = 160,
+	orig_y = 120
 };
 
 static const char *map_tb_files[] = {
@@ -110,7 +110,7 @@ static int mapedit_create(map_t *map, robots_t *robots, mapedit_cb_t *cb,
 		goto error;
 	}
 
-	toolbar_set_origin(mapedit->map_tb, 8, 52);
+	toolbar_set_origin(mapedit->map_tb, 4, 26);
 	toolbar_set_cb(mapedit->map_tb, mapedit_map_toolbar_cb, mapedit);
 
 	toolbar_select(mapedit->map_tb,
@@ -354,7 +354,7 @@ static void mapedit_mapview_cb(void *arg, int x, int y)
  */
 static void mapedit_mapview_setup(mapedit_t *mapedit)
 {
-	mapview_set_orig(mapedit->mapview, 0, 112);
+	mapview_set_orig(mapedit->mapview, 0, 56);
 	mapview_set_cb(mapedit->mapview, mapedit_mapview_cb, mapedit);
 }
 
