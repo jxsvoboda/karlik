@@ -40,7 +40,7 @@ typedef struct {
 	/** Number of entries */
 	int nentries;
 	/** Icon for each entry */
-	SDL_Surface **icon;
+	gfx_bmp_t **icon;
 	/** Origin X coordinate */
 	int orig_x;
 	/** Origin Y coordinate */

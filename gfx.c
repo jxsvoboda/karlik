@@ -24,6 +24,7 @@
  * Graphics
  */
 
+#include <errno.h>
 #include <SDL.h>
 #include <stdbool.h>
 #include "gfx.h"
@@ -132,4 +133,87 @@ void gfx_clear(gfx_t *gfx)
 void gfx_update(gfx_t *gfx)
 {
 	SDL_UpdateWindowSurface(gfx->win);
+}
+
+/** Load bitmap from BMP file.
+ *
+ * @param fname File name
+ * @param rbmp Place to store pointer to new bitmap
+ * @return Zero on success or an error code
+ */
+int gfx_bmp_load(const char *fname, gfx_bmp_t **rbmp)
+{
+	gfx_bmp_t *bmp;
+
+	bmp = calloc(1, sizeof(gfx_bmp_t));
+	if (bmp == NULL)
+		return ENOMEM;
+
+	bmp->surf = SDL_LoadBMP(fname);
+	if (bmp->surf == NULL) {
+		free(bmp);
+		return EIO;
+	}
+
+	bmp->w = bmp->surf->w;
+	bmp->h = bmp->surf->h;
+	*rbmp = bmp;
+	return 0;
+}
+
+/** Destroy bitmap.
+ *
+ * @param bmp Bitmap
+ */
+void gfx_bmp_destroy(gfx_bmp_t *bmp)
+{
+	SDL_FreeSurface(bmp->surf);
+	free(bmp);
+}
+
+/** Set color key on bitmap.
+ *
+ * @param bmp Bitmap
+ * @param r Red
+ * @param g Green
+ * @param b Blue
+ */
+void gfx_bmp_set_color_key(gfx_bmp_t *bmp, int r, int g, int b)
+{
+	Uint32 key;
+
+	key = SDL_MapRGB(bmp->surf->format, r, g, b);
+	SDL_SetColorKey(bmp->surf, SDL_TRUE, key);
+}
+
+/** Render bitmap.
+ *
+ * @param gfx Graphics
+ * @param bmp Bitmap
+ * @param x X coordinate on screen
+ * @param y Y coordinate on screen
+ */
+void gfx_bmp_render(gfx_t *gfx, gfx_bmp_t *bmp, int x, int y)
+{
+	SDL_Surface *surf;
+	SDL_Rect drect;
+
+	surf = SDL_GetWindowSurface(gfx->win);
+
+	drect.x = x;
+	drect.y = y;
+	drect.w = bmp->surf->w * 2;
+	drect.h = bmp->surf->h * 2;
+
+	SDL_BlitScaled(bmp->surf, NULL, surf, &drect);
+}
+
+/** Set window icon.
+ *
+ * @param gfx Graphics
+ * @param icon Icon bitmap
+ */
+void gfx_set_wnd_icon(gfx_t *gfx, gfx_bmp_t *icon)
+{
+	SDL_SetWindowIcon(gfx->win, icon->surf);
 }

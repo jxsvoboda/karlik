@@ -31,11 +31,23 @@ typedef struct {
 	SDL_Window *win;
 } gfx_t;
 
+typedef struct {
+	SDL_Surface *surf;
+	int w;
+	int h;
+} gfx_bmp_t;
+
 extern int gfx_init(gfx_t *, bool);
 extern void gfx_quit(gfx_t *);
 extern void gfx_clear(gfx_t *);
 extern void gfx_rect(gfx_t *, int, int, int, int, uint32_t);
 extern uint32_t gfx_rgb(gfx_t *, uint8_t, uint8_t, uint8_t);
+extern int gfx_bmp_load(const char *, gfx_bmp_t **);
+extern void gfx_bmp_destroy(gfx_bmp_t *);
+extern void gfx_bmp_set_color_key(gfx_bmp_t *, int, int, int);
+extern void gfx_bmp_render(gfx_t *, gfx_bmp_t *, int, int);
+extern void gfx_set_wnd_icon(gfx_t *, gfx_bmp_t *);
+
 extern void gfx_update(gfx_t *);
 
 #endif

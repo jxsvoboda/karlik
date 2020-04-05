@@ -88,7 +88,7 @@ void map_destroy(map_t *map)
 
 	for (i = 0; i < map->nimages; i++) {
 		if (map->image[i] != NULL)
-			SDL_FreeSurface(map->image[i]);
+			gfx_bmp_destroy(map->image[i]);
 	}
 
 	free(map->image);
@@ -128,7 +128,8 @@ int map_load_tile_img(map_t *map, const char **fname)
 	int nimages;
 	int i;
 	const char **cp;
-	SDL_Surface **images;
+	gfx_bmp_t **images;
+	int rc;
 
 	/* Count number of entries */
 	cp = fname;
@@ -138,13 +139,13 @@ int map_load_tile_img(map_t *map, const char **fname)
 		++cp;
 	}
 
-	images = calloc(nimages, sizeof(SDL_Surface *));
+	images = calloc(nimages, sizeof(gfx_bmp_t *));
 	if (images == NULL)
 		return ENOMEM;
 
 	for (i = 0; i < nimages; i++) {
-		images[i] = SDL_LoadBMP(fname[i]);
-		if (images[i] == NULL)
+		rc = gfx_bmp_load(fname[i], &images[i]);
+		if (rc != 0)
 			goto error;
 	}
 
@@ -154,7 +155,7 @@ int map_load_tile_img(map_t *map, const char **fname)
 error:
 	for (i = 0; i < nimages; i++)
 		if (images[i] != NULL)
-			SDL_FreeSurface(images[i]);
+			gfx_bmp_destroy(images[i]);
 	free(images);
 	return EIO;
 }

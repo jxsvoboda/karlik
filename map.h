@@ -23,8 +23,8 @@
 #ifndef MAP_H
 #define MAP_H
 
-#include <SDL.h>
 #include <stdio.h>
+#include "gfx.h"
 
 typedef enum {
 	/** Empty tile */
@@ -58,7 +58,7 @@ typedef struct {
 	/** Margin above each row */
 	int margin_y;
 	/** Tile images */
-	SDL_Surface **image;
+	gfx_bmp_t **image;
 	/** Number of images */
 	int nimages;
 } map_t;

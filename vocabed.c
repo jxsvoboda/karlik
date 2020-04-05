@@ -89,7 +89,7 @@ static int vocabed_create(map_t *map, robots_t *robots, vocabed_cb_t *cb,
 {
 	vocabed_t *vocabed;
 	const char **cp;
-	SDL_Surface *icon;
+	gfx_bmp_t *icon;
 	int rc;
 
 	vocabed = calloc(1, sizeof(vocabed_t));
@@ -114,8 +114,8 @@ static int vocabed_create(map_t *map, robots_t *robots, vocabed_cb_t *cb,
 	cp = verb_icons;
 	while (*cp != NULL) {
 		printf("Load '%s'\n", *cp);
-		icon = SDL_LoadBMP(*cp);
-		if (icon == NULL) {
+		rc = gfx_bmp_load(*cp, &icon);
+		if (rc != 0) {
 			rc = ENOMEM;
 			goto error;
 		}

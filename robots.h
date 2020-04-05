@@ -23,7 +23,6 @@
 #ifndef ROBOTS_H
 #define ROBOTS_H
 
-#include <SDL.h>
 #include <stdio.h>
 #include "adt/list.h"
 #include "gfx.h"
@@ -36,8 +35,8 @@ typedef struct robots {
 	map_t *map;
 	/** List of robots (robot_t) */
 	list_t robots;
-	/** Robot image */
-	SDL_Surface **image;
+	/** Robot images */
+	gfx_bmp_t **image;
 	/** Number of images */
 	int nimages;
 	/** Tile width */

@@ -48,6 +48,7 @@ int toolbar_create(const char **fname, toolbar_t **rtoolbar)
 	int nentries;
 	int i;
 	const char **cp;
+	int rc;
 
 	toolbar = calloc(1, sizeof(toolbar_t));
 	if (toolbar == NULL)
@@ -62,15 +63,15 @@ int toolbar_create(const char **fname, toolbar_t **rtoolbar)
 	}
 
 	toolbar->nentries = nentries;
-	toolbar->icon = calloc(nentries, sizeof(SDL_Surface *));
+	toolbar->icon = calloc(nentries, sizeof(gfx_bmp_t *));
 	if (toolbar->icon == NULL) {
 		free(toolbar);
 		return ENOMEM;
 	}
 
 	for (i = 0; i < nentries; i++) {
-		toolbar->icon[i] = SDL_LoadBMP(fname[i]);
-		if (toolbar->icon[i] == NULL)
+		rc = gfx_bmp_load(fname[i], &toolbar->icon[i]);
+		if (rc != 0)
 			goto error;
 	}
 
@@ -79,7 +80,7 @@ int toolbar_create(const char **fname, toolbar_t **rtoolbar)
 error:
 	for (i = 0; i < nentries; i++) {
 		if (toolbar->icon[i] != NULL)
-			SDL_FreeSurface(toolbar->icon[i]);
+			gfx_bmp_destroy(toolbar->icon[i]);
 	}
 
 	free(toolbar);
@@ -120,7 +121,7 @@ void toolbar_destroy(toolbar_t *toolbar)
 
 	for (i = 0; i < toolbar->nentries; i++) {
 		if (toolbar->icon[i] != NULL)
-			SDL_FreeSurface(toolbar->icon[i]);
+			gfx_bmp_destroy(toolbar->icon[i]);
 	}
 
 	free(toolbar->icon);
@@ -144,34 +145,32 @@ void toolbar_select(toolbar_t *toolbar, int sel)
  */
 void toolbar_draw(toolbar_t *toolbar, gfx_t *gfx)
 {
-	SDL_Surface *surf;
-	SDL_Rect drect;
-	SDL_Rect frect;
-	Uint32 color;
+	int x, y;
+	int w, h;
+	int fx, fy;
+	int fw, fh;
+	uint32_t color;
 	int i;
 
-	surf = SDL_GetWindowSurface(gfx->win);
-
-	drect.x = toolbar->orig_x;
-	drect.y = toolbar->orig_y;
+	x = toolbar->orig_x;
+	y = toolbar->orig_y;
 
 	for (i = 0; i < toolbar->nentries; i++) {
-		drect.x += toolbar_hmargin;
-		drect.w = 2 * toolbar->icon[i]->w;
-		drect.h = 2 * toolbar->icon[i]->h;
+		x += toolbar_hmargin;
+		w = 2 * toolbar->icon[i]->w;
+		h = 2 * toolbar->icon[i]->h;
 
-		frect = drect;
-		frect.x -= toolbar_frame_width;
-		frect.y -= toolbar_frame_width;
-		frect.w += 2 * toolbar_frame_width;
-		frect.h += 2 * toolbar_frame_width;
+		fx = x - toolbar_frame_width;
+		fy = y - toolbar_frame_width;
+		fw = w + 2 * toolbar_frame_width;
+		fh = h + 2 * toolbar_frame_width;
 
-		color = SDL_MapRGB(surf->format, 255, 0, 0);
+		color = gfx_rgb(gfx, 255, 0, 0);
 		if (i == toolbar->sel)
-			SDL_FillRect(surf, &frect, color);
+			gfx_rect(gfx, fx, fy, fw, fh, color);
 
-		SDL_BlitScaled(toolbar->icon[i], NULL, surf, &drect);
-		drect.x += drect.w + toolbar_hmargin;
+		gfx_bmp_render(gfx, toolbar->icon[i], x, y);
+		x += w + toolbar_hmargin;
 	}
 }
 
@@ -183,23 +182,23 @@ void toolbar_draw(toolbar_t *toolbar, gfx_t *gfx)
  */
 bool toolbar_event(toolbar_t *toolbar, SDL_Event *event)
 {
-	SDL_Rect drect;
+	int x, y;
+	int w, h;
 	SDL_MouseButtonEvent *mbe;
 	int i;
 
-	drect.x = toolbar->orig_x + toolbar_hmargin;
-	drect.y = toolbar->orig_y;
+	x = toolbar->orig_x + toolbar_hmargin;
+	y = toolbar->orig_y;
 
 	for (i = 0; i < toolbar->nentries; i++) {
-		drect.x += toolbar_hmargin;
-		drect.w = 2 * toolbar->icon[i]->w;
-		drect.h = 2 * toolbar->icon[i]->h;
+		x += toolbar_hmargin;
+		w = 2 * toolbar->icon[i]->w;
+		h = 2 * toolbar->icon[i]->h;
 
 		if (event->type == SDL_MOUSEBUTTONDOWN) {
 			mbe = (SDL_MouseButtonEvent *)event;
-			if (mbe->x >= drect.x && mbe->y >= drect.y &&
-			    mbe->x < drect.x + drect.w &&
-			    mbe->y < drect.y + drect.h) {
+			if (mbe->x >= x && mbe->y >= y &&
+			    mbe->x < x + w && mbe->y < y + h) {
 				toolbar->sel = i;
 				if (toolbar->cb != NULL)
 					toolbar->cb(toolbar->arg, i);
@@ -207,7 +206,7 @@ bool toolbar_event(toolbar_t *toolbar, SDL_Event *event)
 			}
 		}
 
-		drect.x += drect.w + toolbar_hmargin;
+		x += w + toolbar_hmargin;
 	}
 
 	return false;

@@ -96,11 +96,8 @@ void mapview_draw(mapview_t *mapview, gfx_t *gfx)
 	int dx, dy;
 	map_t *map;
 	map_tile_t ttype;
-	SDL_Surface *surf;
-	SDL_Rect drect;
 
 	map = mapview->map;
-	surf = SDL_GetWindowSurface(gfx->win);
 
 	for (x = 0; x < map->width; x++) {
 		dx = mapview->orig_x + (1 + x) * map->margin_x +
@@ -110,15 +107,10 @@ void mapview_draw(mapview_t *mapview, gfx_t *gfx)
 			dy = mapview->orig_y + (1 + y) * map->margin_y +
 			    y * map->tile_h;
 
-			drect.x = dx;
-			drect.y = dy;
-			drect.w = map->tile_w;
-			drect.h = map->tile_h;
-
 			ttype = map_get(map, x, y);
 
 			if ((int)ttype < map->nimages)
-				SDL_BlitScaled(map->image[ttype], NULL, surf, &drect);
+				gfx_bmp_render(gfx, map->image[ttype], dx, dy);
 		}
 	}
 
@@ -133,31 +125,33 @@ void mapview_draw(mapview_t *mapview, gfx_t *gfx)
  */
 bool mapview_event(mapview_t *mapview, SDL_Event *event)
 {
-	SDL_Rect drect;
 	SDL_MouseButtonEvent *mbe;
 	map_t *map;
+	int tx, ty;
 	int x, y;
+	int w, h;
 
 	map = mapview->map;
 
-	drect.w = map->tile_w;
-	drect.h = map->tile_h;
+	w = map->tile_w;
+	h = map->tile_h;
 
-	for (x = 0; x < map->width; x++) {
-		drect.x = mapview->orig_x + (x + 1) * map->margin_x +
-		    x * map->tile_w;
+	for (tx = 0; tx < map->width; tx++) {
+		x = mapview->orig_x + (tx + 1) * map->margin_x +
+		    tx * map->tile_w;
 
-		for (y = 0; y < map->height; y++) {
-			drect.y = mapview->orig_y + (y + 1) * map->margin_y +
-			    y * map->tile_h;
+		for (ty = 0; ty < map->height; ty++) {
+			y = mapview->orig_y + (ty + 1) * map->margin_y +
+			    ty * map->tile_h;
 
 			if (event->type == SDL_MOUSEBUTTONDOWN) {
 				mbe = (SDL_MouseButtonEvent *)event;
-				if (mbe->x >= drect.x && mbe->y >= drect.y &&
-				    mbe->x < drect.x + drect.w &&
-				    mbe->y < drect.y + drect.h) {
-					if (mapview->cb != NULL)
-						mapview->cb(mapview->cb_arg, x, y);
+				if (mbe->x >= x && mbe->y >= y &&
+				    mbe->x < x + w && mbe->y < y + h) {
+					if (mapview->cb != NULL) {
+						mapview->cb(mapview->cb_arg,
+						    x, y);
+					}
 					return true;
 				}
 			}

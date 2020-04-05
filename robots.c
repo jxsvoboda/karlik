@@ -250,22 +250,18 @@ robot_t *robots_get(robots_t *robots, int x, int y)
  */
 void robots_draw(robots_t *robots, int orig_x, int orig_y, gfx_t *gfx)
 {
-	SDL_Rect drect;
 	robot_t *robot;
-	SDL_Surface *surf;
+	int x, y;
 
 	if (robots->nimages < 1)
 		return;
 
-	surf = SDL_GetWindowSurface(gfx->win);
-
 	robot = robots_first(robots);
 	while (robot != NULL) {
-		drect.x = orig_x + robots->tile_w * robot->x + robots->rel_x;
-		drect.y = orig_y + robots->tile_h * robot->y + robots->rel_y;
-		drect.w = robots->image[0]->w * 2;
-		drect.h = robots->image[0]->h * 2;
-		SDL_BlitScaled(robots->image[0], NULL, surf, &drect);
+		x = orig_x + robots->tile_w * robot->x + robots->rel_x;
+		y = orig_y + robots->tile_h * robot->y + robots->rel_y;
+
+		gfx_bmp_render(gfx, robots->image[0], x, y);
 
 		robot = robots_next(robot);
 	}
@@ -286,8 +282,8 @@ int robots_load_img(robots_t *robots, int r, int g, int b,
 	int nimages;
 	int i;
 	const char **cp;
-	SDL_Surface **images;
-	Uint32 key;
+	gfx_bmp_t **images;
+	int rc;
 
 	/* Count number of entries */
 	cp = fname;
@@ -297,17 +293,16 @@ int robots_load_img(robots_t *robots, int r, int g, int b,
 		++cp;
 	}
 
-	images = calloc(nimages, sizeof(SDL_Surface *));
+	images = calloc(nimages, sizeof(gfx_bmp_t *));
 	if (images == NULL)
 		return ENOMEM;
 
 	for (i = 0; i < nimages; i++) {
-		images[i] = SDL_LoadBMP(fname[i]);
-		if (images[i] == NULL)
+		rc = gfx_bmp_load(fname[i], &images[i]);
+		if (rc != 0)
 			goto error;
 
-		key = SDL_MapRGB(images[i]->format, r, g, b);
-		SDL_SetColorKey(images[i], SDL_TRUE, key);
+		gfx_bmp_set_color_key(images[i], r, g, b);
 	}
 
 	robots->image = images;
@@ -316,7 +311,7 @@ int robots_load_img(robots_t *robots, int r, int g, int b,
 error:
 	for (i = 0; i < nimages; i++)
 		if (images[i] != NULL)
-			SDL_FreeSurface(images[i]);
+			gfx_bmp_destroy(images[i]);
 	free(images);
 	return EIO;
 }

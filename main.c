@@ -39,6 +39,7 @@ int main(int argc, char *argv[])
 {
 	gfx_t gfx;
 	SDL_Event e;
+	gfx_bmp_t *appicon = NULL;
 	karlik_t *karlik = NULL;
 	bool fs = false;
 	int rc;
@@ -59,17 +60,17 @@ int main(int argc, char *argv[])
 
 	rc = gfx_init(&gfx, fs);
 	if (rc != 0)
-		return 1;
+		goto error;
 
-	SDL_Surface *appicon = SDL_LoadBMP("img/appicon.bmp");
-	if (appicon == NULL)
-		return 1;
+	rc = gfx_bmp_load("img/appicon.bmp", &appicon);
+	if (rc != 0)
+		goto error;
 
-	SDL_SetWindowIcon(gfx.win, appicon);
+	gfx_set_wnd_icon(&gfx, appicon);
 
 	rc = karlik_create(&gfx, &karlik);
 	if (rc != 0)
-		return 1;
+		goto error;
 
 	while (!karlik->quit && SDL_WaitEvent(&e)) {
 		karlik_event(karlik, &e, &gfx);
@@ -78,11 +79,17 @@ int main(int argc, char *argv[])
 	rc = karlik_save(karlik);
 	if (rc != 0) {
 		printf("Error saving map!\n");
-		return 1;
+		goto error;
 	}
 
 	karlik_destroy(karlik);
 	gfx_quit(&gfx);
 
 	return 0;
+error:
+	if (karlik != NULL)
+		karlik_destroy(karlik);
+	gfx_quit(&gfx);
+	gfx_bmp_destroy(appicon);
+	return 1;
 }

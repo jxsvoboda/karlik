@@ -108,7 +108,7 @@ void wordlist_destroy(wordlist_t *wordlist)
  *
  * @return Zero on success, ENOMEM if out of memory
  */
-int wordlist_add(wordlist_t *wordlist, SDL_Surface *icon, void *arg)
+int wordlist_add(wordlist_t *wordlist, gfx_bmp_t *icon, void *arg)
 {
 	wordlist_entry_t *entry;
 
@@ -131,23 +131,18 @@ int wordlist_add(wordlist_t *wordlist, SDL_Surface *icon, void *arg)
  */
 void wordlist_draw(wordlist_t *wordlist, gfx_t *gfx)
 {
-	SDL_Surface *surf;
-	SDL_Rect drect;
 	wordlist_entry_t *entry;
+	int x, y;
 
-	surf = SDL_GetWindowSurface(gfx->win);
-
-	drect.x = wordlist->orig_x;
-	drect.y = wordlist->orig_y;
+	x = wordlist->orig_x;
+	y = wordlist->orig_y;
 
 	entry = wordlist_first(wordlist);
 	while (entry != NULL) {
-		drect.x += wordlist_hmargin;
-		drect.w = 2 * entry->icon->w;
-		drect.h = 2 * entry->icon->h;
+		x += wordlist_hmargin;
 
-		SDL_BlitScaled(entry->icon, NULL, surf, &drect);
-		drect.x += drect.w + wordlist_hmargin;
+		gfx_bmp_render(gfx, entry->icon, x, y);
+		x += 2 * entry->icon->w + wordlist_hmargin;
 
 		entry = wordlist_next(entry);
 	}
@@ -161,24 +156,24 @@ void wordlist_draw(wordlist_t *wordlist, gfx_t *gfx)
  */
 bool wordlist_event(wordlist_t *wordlist, SDL_Event *event)
 {
-	SDL_Rect drect;
 	SDL_MouseButtonEvent *mbe;
 	wordlist_entry_t *entry;
+	int x, y;
+	int w, h;
 
-	drect.x = wordlist->orig_x + wordlist_hmargin;
-	drect.y = wordlist->orig_y;
+	x = wordlist->orig_x + wordlist_hmargin;
+	y = wordlist->orig_y;
 
 	entry = wordlist_first(wordlist);
 	while (entry != NULL) {
-		drect.x += wordlist_hmargin;
-		drect.w = 2 * entry->icon->w;
-		drect.h = 2 * entry->icon->h;
+		x += wordlist_hmargin;
+		w = 2 * entry->icon->w;
+		h = 2 * entry->icon->h;
 
 		if (event->type == SDL_MOUSEBUTTONDOWN) {
 			mbe = (SDL_MouseButtonEvent *)event;
-			if (mbe->x >= drect.x && mbe->y >= drect.y &&
-			    mbe->x < drect.x + drect.w &&
-			    mbe->y < drect.y + drect.h) {
+			if (mbe->x >= x && mbe->y >= y &&
+			    mbe->x < x + w && mbe->y < y + h) {
 				printf("Select entry %p\n", entry);
 				if (wordlist->cb != NULL)
 					wordlist->cb(wordlist->arg, entry->arg);
@@ -186,7 +181,7 @@ bool wordlist_event(wordlist_t *wordlist, SDL_Event *event)
 			}
 		}
 
-		drect.x += drect.w + wordlist_hmargin;
+		x += w + wordlist_hmargin;
 		entry = wordlist_next(entry);
 	}
 
