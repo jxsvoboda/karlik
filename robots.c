@@ -240,3 +240,105 @@ robot_t *robots_get(robots_t *robots, int x, int y)
 
 	return NULL;
 }
+
+/** Draw robots.
+ *
+ * @param robots Robots
+ * @param orig_x X coordinate of origin on the screen
+ * @param orig_y Y coordinate of origin on the screen
+ * @param gfx Graphics
+ */
+void robots_draw(robots_t *robots, int orig_x, int orig_y, gfx_t *gfx)
+{
+	SDL_Rect drect;
+	robot_t *robot;
+	SDL_Surface *surf;
+
+	if (robots->nimages < 1)
+		return;
+
+	surf = SDL_GetWindowSurface(gfx->win);
+
+	robot = robots_first(robots);
+	while (robot != NULL) {
+		drect.x = orig_x + robots->tile_w * robot->x + robots->rel_x;
+		drect.y = orig_y + robots->tile_h * robot->y + robots->rel_y;
+		drect.w = robots->image[0]->w * 2;
+		drect.h = robots->image[0]->h * 2;
+		SDL_BlitScaled(robots->image[0], NULL, surf, &drect);
+
+		robot = robots_next(robot);
+	}
+}
+
+/** Load robot images.
+ *
+ * @param robots Robots
+ * @param r Red component of color key
+ * @param g Green component of color key
+ * @param b Blue component of color key
+ * @param fname Null-terminated list of file names
+ * @return Zero on success or an error code
+ */
+int robots_load_img(robots_t *robots, int r, int g, int b,
+    const char **fname)
+{
+	int nimages;
+	int i;
+	const char **cp;
+	SDL_Surface **images;
+	Uint32 key;
+
+	/* Count number of entries */
+	cp = fname;
+	nimages = 0;
+	while (*cp != NULL) {
+		++nimages;
+		++cp;
+	}
+
+	images = calloc(nimages, sizeof(SDL_Surface *));
+	if (images == NULL)
+		return ENOMEM;
+
+	for (i = 0; i < nimages; i++) {
+		images[i] = SDL_LoadBMP(fname[i]);
+		if (images[i] == NULL)
+			goto error;
+
+		key = SDL_MapRGB(images[i]->format, r, g, b);
+		SDL_SetColorKey(images[i], SDL_TRUE, key);
+	}
+
+	robots->image = images;
+	robots->nimages = nimages;
+	return 0;
+error:
+	for (i = 0; i < nimages; i++)
+		if (images[i] != NULL)
+			SDL_FreeSurface(images[i]);
+	free(images);
+	return EIO;
+}
+
+/** Set tile size.
+ *
+ * @param w Tile width
+ * @param h Tile height
+ */
+void robots_set_tile_size(robots_t *robots, int w, int h)
+{
+	robots->tile_w = w;
+	robots->tile_h = h;
+}
+
+/** Set position relative to map tile.
+ *
+ * @param x X relative position
+ * @param y Y relative position
+ */
+void robots_set_rel_pos(robots_t *robots, int x, int y)
+{
+	robots->rel_x = x;
+	robots->rel_y = y;
+}

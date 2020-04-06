@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include "gfx.h"
 #include "mapview.h"
+#include "robots.h"
 #include "toolbar.h"
 #include "wordlist.h"
 
@@ -47,8 +48,10 @@ typedef struct {
 	void *arg;
 } vocabed_t;
 
-extern int vocabed_new(map_t *, vocabed_cb_t *, void *, vocabed_t **);
-extern int vocabed_load(map_t *, FILE *, vocabed_cb_t *, void *, vocabed_t **);
+extern int vocabed_new(map_t *, robots_t *, vocabed_cb_t *, void *,
+    vocabed_t **);
+extern int vocabed_load(map_t *, robots_t *, FILE *, vocabed_cb_t *, void *,
+    vocabed_t **);
 extern void vocabed_destroy(vocabed_t *);
 extern void vocabed_display(vocabed_t *, gfx_t *gfx);
 extern int vocabed_save(vocabed_t *, FILE *);

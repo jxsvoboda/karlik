@@ -26,6 +26,7 @@
 #include <SDL.h>
 #include <stdio.h>
 #include "map.h"
+#include "robots.h"
 
 typedef void (*mapview_cb_t)(void *arg, int x, int y);
 
@@ -36,6 +37,8 @@ typedef void (*mapview_cb_t)(void *arg, int x, int y);
 typedef struct {
 	/** Map */
 	map_t *map;
+	/** Robots */
+	robots_t *robots;
 	/** X coordinate of top-left corner on the screen */
 	int orig_x;
 	/** Y coordinate of top-left conrer on the screen */
@@ -46,7 +49,7 @@ typedef struct {
 	void *cb_arg;
 } mapview_t;
 
-extern int mapview_create(map_t *, mapview_t **);
+extern int mapview_create(map_t *, robots_t *, mapview_t **);
 extern void mapview_destroy(mapview_t *);
 extern void mapview_set_orig(mapview_t *, int, int);
 extern void mapview_set_cb(mapview_t *, mapview_cb_t, void *);

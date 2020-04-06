@@ -23,8 +23,10 @@
 #ifndef ROBOTS_H
 #define ROBOTS_H
 
+#include <SDL.h>
 #include <stdio.h>
 #include "adt/list.h"
+#include "gfx.h"
 #include "map.h"
 #include "robot.h"
 
@@ -34,6 +36,18 @@ typedef struct robots {
 	map_t *map;
 	/** List of robots (robot_t) */
 	list_t robots;
+	/** Robot image */
+	SDL_Surface **image;
+	/** Number of images */
+	int nimages;
+	/** Tile width */
+	int tile_w;
+	/** Tile height */
+	int tile_h;
+	/** Relative position to map tile */
+	int rel_x;
+	/** Relative position to map tile */
+	int rel_y;
 } robots_t;
 
 extern int robots_create(map_t *, robots_t **);
@@ -43,5 +57,9 @@ extern void robots_destroy(robots_t *);
 extern int robots_add(robots_t *, int, int);
 extern void robots_remove(robots_t *, int, int);
 extern robot_t *robots_get(robots_t *, int, int);
+extern void robots_draw(robots_t *, int, int, gfx_t *);
+extern int robots_load_img(robots_t *, int, int, int, const char **);
+extern void robots_set_tile_size(robots_t *, int, int);
+extern void robots_set_rel_pos(robots_t *, int, int);
 
 #endif

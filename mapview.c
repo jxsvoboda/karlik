@@ -34,11 +34,12 @@
 /** Create map view.
  *
  * @param map Map
+ * @param robots Robots
  * @param rmapview Place to store pointer to new map view
  *
  * @return Zero on success or error code
  */
-int mapview_create(map_t *map, mapview_t **rmapview)
+int mapview_create(map_t *map, robots_t *robots, mapview_t **rmapview)
 {
 	mapview_t *mapview;
 
@@ -47,6 +48,7 @@ int mapview_create(map_t *map, mapview_t **rmapview)
 		return ENOMEM;
 
 	mapview->map = map;
+	mapview->robots = robots;
 	*rmapview = mapview;
 	return 0;
 }
@@ -119,6 +121,8 @@ void mapview_draw(mapview_t *mapview, gfx_t *gfx)
 				SDL_BlitScaled(map->image[ttype], NULL, surf, &drect);
 		}
 	}
+
+	robots_draw(mapview->robots, mapview->orig_x, mapview->orig_y, gfx);
 }
 
 /** Process input event in map view.

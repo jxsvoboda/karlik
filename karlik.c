@@ -21,7 +21,7 @@
  */
 
 /*
- * Map editor
+ * Karlik
  */
 
 #include <assert.h>
@@ -51,6 +51,17 @@ static const char *map_tile_files[] = {
 	"img/tile/grey.bmp",
 	"img/tile/black.bmp",
 	"img/tile/robot.bmp",
+	NULL
+};
+
+/** Robot image color key */
+static int robots_key[3] = {
+	72, 72, 72
+};
+
+/** Robot image file names */
+static const char *robots_files[] = {
+	"img/robot/south.bmp",
 	NULL
 };
 
@@ -111,6 +122,27 @@ static int karlik_map_setup(karlik_t *karlik)
 	return 0;
 }
 
+/** Set up robots for use (common between load and new)
+ *
+ * @param karlik Karlik
+ */
+static int karlik_robots_setup(karlik_t *karlik)
+{
+	int rc;
+
+	rc = robots_load_img(karlik->robots, robots_key[0], robots_key[1],
+	    robots_key[2], robots_files);
+	if (rc != 0) {
+		printf("Error loading robot graphics.\n");
+		return rc;
+	}
+
+	robots_set_tile_size(karlik->robots, 36, 36);
+	robots_set_rel_pos(karlik->robots, -10, -32);
+
+	return 0;
+}
+
 /** Create new Karlik workspace.
  *
  * @param karlik Map editor
@@ -132,13 +164,17 @@ static int karlik_new(karlik_t *karlik)
 	if (rc != 0)
 		return rc;
 
+	rc = karlik_robots_setup(karlik);
+	if (rc != 0)
+		return rc;
+
 	rc = mapedit_new(karlik->map, karlik->robots, &karlik_mapedit_cb,
 	    (void *)karlik, &karlik->mapedit);
 	if (rc != 0)
 		return rc;
 
-	rc = vocabed_new(karlik->map, &karlik_vocabed_cb, (void *)karlik,
-	    &karlik->vocabed);
+	rc = vocabed_new(karlik->map, karlik->robots, &karlik_vocabed_cb,
+	    (void *)karlik, &karlik->vocabed);
 	if (rc != 0)
 		return rc;
 
@@ -172,6 +208,10 @@ static int karlik_load(karlik_t *karlik)
 	if (rc != 0)
 		return rc;
 
+	rc = karlik_robots_setup(karlik);
+	if (rc != 0)
+		return rc;
+
 	nitem = fscanf(f, "%d\n", &kmode);
 	if (nitem != 1)
 		goto error;
@@ -187,8 +227,8 @@ static int karlik_load(karlik_t *karlik)
 		goto error;
 	}
 
-	rc = vocabed_load(karlik->map, f, &karlik_vocabed_cb, (void *)karlik,
-	    &karlik->vocabed);
+	rc = vocabed_load(karlik->map, karlik->robots, f, &karlik_vocabed_cb,
+	    (void *)karlik, &karlik->vocabed);
 	if (rc != 0) {
 		rc = EIO;
 		goto error;
@@ -253,7 +293,7 @@ error:
 	return rc;
 }
 
-static void key_press(karlik_t *karlik, SDL_Scancode scancode)
+static void karlik_key_press(karlik_t *karlik, SDL_Scancode scancode)
 {
 	switch (scancode) {
 	case SDL_SCANCODE_L:
@@ -292,7 +332,7 @@ void karlik_event(karlik_t *karlik, SDL_Event *e, gfx_t *gfx)
 		ke = (SDL_KeyboardEvent *) e;
 		if (ke->keysym.scancode == SDL_SCANCODE_ESCAPE)
 			karlik->quit = true;
-		key_press(karlik, ke->keysym.scancode);
+		karlik_key_press(karlik, ke->keysym.scancode);
 		karlik_display(karlik, gfx);
 		gfx_update(gfx);
 		break;

@@ -31,6 +31,7 @@
 #include <SDL.h>
 #include "gfx.h"
 #include "mapview.h"
+#include "robots.h"
 #include "vocabed.h"
 
 enum {
@@ -54,9 +55,9 @@ static const char *verb_icons[] = {
 static void vocabed_map_setup(vocabed_t *);
 static void vocabed_verbs_cb(void *, void *);
 
-/** Display Map editor.
+/** Display vocabulary editor.
  *
- * @param vocabed Map editor
+ * @param vocabed Vocabulary editor
  * @param gfx Graphics
  */
 void vocabed_display(vocabed_t *vocabed, gfx_t *gfx)
@@ -67,23 +68,24 @@ void vocabed_display(vocabed_t *vocabed, gfx_t *gfx)
 
 /** Request repaint.
  *
- * @param vocabed Map editor
+ * @param vocabed Vocabulary editor
  */
 static void vocabed_repaint_req(vocabed_t *vocabed)
 {
 	vocabed->cb->repaint(vocabed->arg);
 }
 
-/** Create map editor.
+/** Create vocabulary editor.
  *
  * @param map Map
+ * @param robots Robots
  * @param cb Callbacks
  * @param arg Callback arguments
- * @param rvocabed Place to store pointer to new map editor
+ * @param rvocabed Place to store pointer to new vocabulary editor
  * @return Zero on success or an error code
  */
-static int vocabed_create(map_t *map, vocabed_cb_t *cb, void *arg,
-    vocabed_t **rvocabed)
+static int vocabed_create(map_t *map, robots_t *robots, vocabed_cb_t *cb,
+    void *arg, vocabed_t **rvocabed)
 {
 	vocabed_t *vocabed;
 	const char **cp;
@@ -94,7 +96,7 @@ static int vocabed_create(map_t *map, vocabed_cb_t *cb, void *arg,
 	if (vocabed == NULL)
 		return ENOMEM;
 
-	rc = mapview_create(map, &vocabed->mapview);
+	rc = mapview_create(map, robots, &vocabed->mapview);
 	if (rc != 0) {
 		rc = ENOMEM;
 		goto error;
@@ -106,7 +108,7 @@ static int vocabed_create(map_t *map, vocabed_cb_t *cb, void *arg,
 		goto error;
 	}
 
-	wordlist_set_origin(vocabed->verbs, 0, 400);
+	wordlist_set_origin(vocabed->verbs, 0, 428);
 	wordlist_set_cb(vocabed->verbs, vocabed_verbs_cb, vocabed);
 
 	cp = verb_icons;
@@ -137,20 +139,22 @@ error:
 	return rc;
 }
 
-/** Create new, empty map.
+/** Create new, empty vocabulary editor.
  *
  * @param map Map
+ * @param robots Robots
  * @param cb Callbacks
  * @param arg Callback arguments
- * @param rvocabed Place to store pointer to new map editor
+ * @param rvocabed Place to store pointer to new vocabulary editor
  * @return Zero on success or an error code
  */
-int vocabed_new(map_t *map, vocabed_cb_t *cb, void *arg, vocabed_t **rvocabed)
+int vocabed_new(map_t *map, robots_t *robots, vocabed_cb_t *cb, void *arg,
+    vocabed_t **rvocabed)
 {
 	vocabed_t *vocabed;
 	int rc;
 
-	rc = vocabed_create(map, cb, arg, &vocabed);
+	rc = vocabed_create(map, robots, cb, arg, &vocabed);
 	if (rc != 0) {
 		map_destroy(map);
 		return rc;
@@ -163,23 +167,25 @@ int vocabed_new(map_t *map, vocabed_cb_t *cb, void *arg, vocabed_t **rvocabed)
 	return 0;
 }
 
-/** Load map editor.
+/** Load vocabulary editor.
  *
  * @param map Map
+ * @param robots Robots
  * @param f File
  * @param cb Callbacks
  * @param arg Callback arguments
- * @param rvocabed Place to store pointer to new map editor
+ * @param rvocabed Place to store pointer to new vocabulary editor
  * @return Zero on success or an error code
  */
-int vocabed_load(map_t *map, FILE *f, vocabed_cb_t *cb, void *arg, vocabed_t **rvocabed)
+int vocabed_load(map_t *map, robots_t *robots, FILE *f, vocabed_cb_t *cb,
+    void *arg, vocabed_t **rvocabed)
 {
 	vocabed_t *vocabed = NULL;
 	int rc;
 
 	(void) f;
 
-	rc = vocabed_create(map, cb, arg, &vocabed);
+	rc = vocabed_create(map, robots, cb, arg, &vocabed);
 	if (rc != 0) {
 		rc = ENOMEM;
 		goto error;
@@ -201,9 +207,9 @@ error:
 	return rc;
 }
 
-/** Save map editor.
+/** Save vocabulary editor.
  *
- * @param vocabed Map editor
+ * @param vocabed Vocabulary editor
  * @param f File
  * @return Zero on success or an error code
  */
@@ -214,7 +220,12 @@ int vocabed_save(vocabed_t *vocabed, FILE *f)
 	return 0;
 }
 
-static void key_press(vocabed_t *vocabed, SDL_Scancode scancode)
+/** Handle key press in vocabulary editor.
+ *
+ * @param vocabed Vocabulary editor
+ * @param scancode Scancode
+ */
+static void vocabed_key_press(vocabed_t *vocabed, SDL_Scancode scancode)
 {
 	(void) vocabed;
 
@@ -224,6 +235,12 @@ static void key_press(vocabed_t *vocabed, SDL_Scancode scancode)
 	}
 }
 
+/** Vocabulary editor input event.
+ *
+ * @param vocabed Vocabulary editor
+ * @param e Event
+ * @param gfx Graphics
+ */
 void vocabed_event(vocabed_t *vocabed, SDL_Event *e, gfx_t *gfx)
 {
 	SDL_KeyboardEvent *ke;
@@ -237,7 +254,7 @@ void vocabed_event(vocabed_t *vocabed, SDL_Event *e, gfx_t *gfx)
 	switch (e->type) {
 	case SDL_KEYDOWN:
 		ke = (SDL_KeyboardEvent *) e;
-		key_press(vocabed, ke->keysym.scancode);
+		vocabed_key_press(vocabed, ke->keysym.scancode);
 		break;
 	case SDL_MOUSEBUTTONDOWN:
 		me = (SDL_MouseButtonEvent *) e;
@@ -246,9 +263,9 @@ void vocabed_event(vocabed_t *vocabed, SDL_Event *e, gfx_t *gfx)
 	}
 }
 
-/** Map callback.
+/** Vocabulary editor callback.
  *
- * @param arg Map editor (vocabed_t *)
+ * @param arg Vocabulary editor (vocabed_t *)
  * @param x Tile X coordinate
  * @param y Tile Y coordinate
  */
@@ -260,6 +277,13 @@ static void vocabed_mapview_cb(void *arg, int x, int y)
 	vocabed_repaint_req(vocabed);
 }
 
+/** Vocabulary editor verbs callback.
+ *
+ * Called when a verb is selected.
+ *
+ * @param arg Vocabulary editor (vocabed_t)
+ * @param earg Etry argument
+ */
 static void vocabed_verbs_cb(void *arg, void *earg)
 {
 	vocabed_t *vocabed = (vocabed_t *)arg;
@@ -269,19 +293,19 @@ static void vocabed_verbs_cb(void *arg, void *earg)
 	printf("Entry '%s'\n", str);
 }
 
-/** Set up new map for use.
+/** Set up vocabulary editor's mapview for use.
  *
- * @param vocabed Map editor
+ * @param vocabed Vocabulary editor
  */
 static void vocabed_map_setup(vocabed_t *vocabed)
 {
-	mapview_set_orig(vocabed->mapview, 0, 88);
+	mapview_set_orig(vocabed->mapview, 0, 112);
 	mapview_set_cb(vocabed->mapview, vocabed_mapview_cb, vocabed);
 }
 
-/** Destroy map editor.
+/** Destroy vocabulary editor.
  *
- * @param vocabed Map editor
+ * @param vocabed Vocabulary editor
  */
 void vocabed_destroy(vocabed_t *vocabed)
 {

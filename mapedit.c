@@ -98,7 +98,7 @@ static int mapedit_create(map_t *map, robots_t *robots, mapedit_cb_t *cb,
 
 	mapedit->ttype = mapt_wall;
 
-	rc = mapview_create(map, &mapedit->mapview);
+	rc = mapview_create(map, robots, &mapedit->mapview);
 	if (rc != 0)
 		goto error;
 
@@ -223,7 +223,7 @@ int mapedit_save(mapedit_t *mapedit, FILE *f)
 	return 0;
 }
 
-static void key_press(mapedit_t *mapedit, SDL_Scancode scancode)
+static void mapedit_key_press(mapedit_t *mapedit, SDL_Scancode scancode)
 {
 	(void) mapedit;
 
@@ -248,7 +248,7 @@ void mapedit_event(mapedit_t *mapedit, SDL_Event *e, gfx_t *gfx)
 	switch (e->type) {
 	case SDL_KEYDOWN:
 		ke = (SDL_KeyboardEvent *) e;
-		key_press(mapedit, ke->keysym.scancode);
+		mapedit_key_press(mapedit, ke->keysym.scancode);
 		break;
 	case SDL_MOUSEBUTTONDOWN:
 		me = (SDL_MouseButtonEvent *) e;
@@ -327,17 +327,23 @@ static void mapedit_mapview_cb(void *arg, int x, int y)
 {
 	mapedit_t *mapedit = (mapedit_t *)arg;
 	map_tile_t oldt;
+	robot_t *oldr;
 
 	printf("mapedit_map_cb(%d,%d)\n", x, y);
 
 	oldt = map_get(mapedit->mapview->map, x, y);
-	map_set(mapedit->mapview->map, x, y, mapedit->ttype);
+	oldr = robots_get(mapedit->robots, x, y);
 
-	if (oldt == mapt_robot && mapedit->ttype != mapt_robot) {
-		robots_remove(mapedit->robots, x, y);
-	} else if (oldt != mapt_robot && mapedit->ttype == mapt_robot) {
-		(void) robots_add(mapedit->robots, x, y);
+	if (mapedit->ttype != mapt_robot) {
+		if (mapedit->ttype != mapt_wall || oldr == NULL)
+			map_set(mapedit->mapview->map, x, y, mapedit->ttype);
 	}
+
+	if (mapedit->ttype == mapt_none)
+		robots_remove(mapedit->robots, x, y);
+
+	if (mapedit->ttype == mapt_robot && oldt != mapt_wall)
+		(void) robots_add(mapedit->robots, x, y);
 
 	mapedit_repaint_req(mapedit);
 }
@@ -348,7 +354,7 @@ static void mapedit_mapview_cb(void *arg, int x, int y)
  */
 static void mapedit_mapview_setup(mapedit_t *mapedit)
 {
-	mapview_set_orig(mapedit->mapview, 0, 88);
+	mapview_set_orig(mapedit->mapview, 0, 112);
 	mapview_set_cb(mapedit->mapview, mapedit_mapview_cb, mapedit);
 }
 
