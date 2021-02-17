@@ -33,7 +33,7 @@
 typedef struct robots {
 	/** Map used by robots */
 	map_t *map;
-	/** List of robots (robot_t) */
+	/** List of robots (robot_t) sorted by Y ascending */
 	list_t robots;
 	/** Robot images */
 	gfx_bmp_t **image;

@@ -164,8 +164,16 @@ int robots_add(robots_t *robots, int x, int y)
 		return ENOMEM;
 	}
 
+	oldr = robots_first(robots);
+	while (oldr != NULL && oldr->y < y)
+		oldr = robots_next(oldr);
+
 	robot->robots = robots;
-	list_append(&robot->lrobots, &robots->robots);
+	if (oldr != NULL)
+		list_insert_before(&robot->lrobots, &oldr->lrobots);
+	else
+		list_append(&robot->lrobots, &robots->robots);
+
 	return 0;
 }
 
