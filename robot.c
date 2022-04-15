@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Jiri Svoboda
+ * Copyright 2022 Jiri Svoboda
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * copy of this software and associated documentation files (the "Software"),
@@ -27,15 +27,17 @@
 #include <assert.h>
 #include <errno.h>
 #include <stdlib.h>
+#include "dir.h"
 #include "robot.h"
 
 /** Create new robot.
  *
  * @param x X tile coordinate
  * @param y Y tile coordinate
+ * @parma dir Direction robot is facing
  * @param rrobot Place to store pointer to new robot
  */
-int robot_create(int x, int y, robot_t **rrobot)
+int robot_create(int x, int y, dir_t dir, robot_t **rrobot)
 {
 	robot_t *robot;
 
@@ -45,6 +47,7 @@ int robot_create(int x, int y, robot_t **rrobot)
 
 	robot->x = x;
 	robot->y = y;
+	robot->dir = dir_south;
 	*rrobot = robot;
 	return 0;
 }
@@ -68,14 +71,14 @@ int robot_load(FILE *f, robot_t **rrobot)
 {
 	int nitem;
 	int rc;
-	int x, y;
+	int x, y, dir;
 	robot_t *robot;
 
-	nitem = fscanf(f, "%d %d\n", &x, &y);
-	if (nitem != 2)
+	nitem = fscanf(f, "%d %d %d\n", &x, &y, &dir);
+	if (nitem != 3)
 		return EIO;
 
-	rc = robot_create(x, y, &robot);
+	rc = robot_create(x, y, (dir_t)dir, &robot);
 	if (rc != 0) {
 		assert(rc == ENOMEM);
 		return ENOMEM;
@@ -95,7 +98,7 @@ int robot_save(robot_t *robot, FILE *f)
 {
 	int rv;
 
-	rv = fprintf(f, "%d %d\n", robot->x, robot->y);
+	rv = fprintf(f, "%d %d %d\n", robot->x, robot->y, robot->dir);
 	if (rv < 0)
 		return EIO;
 

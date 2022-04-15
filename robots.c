@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Jiri Svoboda
+ * Copyright 2022 Jiri Svoboda
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * copy of this software and associated documentation files (the "Software"),
@@ -26,6 +26,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include "dir.h"
 #include "robot.h"
 #include "robots.h"
 
@@ -158,7 +159,7 @@ int robots_add(robots_t *robots, int x, int y)
 	if (oldr != NULL)
 		return EEXIST;
 
-	rc = robot_create(x, y, &robot);
+	rc = robot_create(x, y, dir_south, &robot);
 	if (rc != 0) {
 		assert(rc == ENOMEM);
 		return ENOMEM;
@@ -260,16 +261,18 @@ void robots_draw(robots_t *robots, int orig_x, int orig_y, gfx_t *gfx)
 {
 	robot_t *robot;
 	int x, y;
+	int dir;
 
-	if (robots->nimages < 1)
+	if (robots->nimages < 4)
 		return;
 
 	robot = robots_first(robots);
 	while (robot != NULL) {
 		x = orig_x + robots->tile_w * robot->x + robots->rel_x;
 		y = orig_y + robots->tile_h * robot->y + robots->rel_y;
+		dir = (int)robot->dir;
 
-		gfx_bmp_render(gfx, robots->image[0], x, y);
+		gfx_bmp_render(gfx, robots->image[dir], x, y);
 
 		robot = robots_next(robot);
 	}

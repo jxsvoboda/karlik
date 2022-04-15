@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Jiri Svoboda
+ * Copyright 2022 Jiri Svoboda
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * copy of this software and associated documentation files (the "Software"),
@@ -61,6 +61,9 @@ static int robots_key[3] = {
 
 /** Robot image file names */
 static const char *robots_files[] = {
+	"img/robot/east.bmp",
+	"img/robot/north.bmp",
+	"img/robot/west.bmp",
 	"img/robot/south.bmp",
 	NULL
 };

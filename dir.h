@@ -20,30 +20,15 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef ROBOT_H
-#define ROBOT_H
+#ifndef DIR_H
+#define DIR_H
 
-#include <stdio.h>
-#include "adt/list.h"
-#include "dir.h"
-
-/** Robot */
-typedef struct {
-	/** Containing robots structure */
-	struct robots *robots;
-	/** Link to @c robots->robots */
-	link_t lrobots;
-	/** X tile coordinate */
-	int x;
-	/** Y tile coordinate */
-	int y;
-	/** Direction robot is facing */
-	dir_t dir;
-} robot_t;
-
-extern int robot_create(int, int, dir_t, robot_t **);
-extern void robot_destroy(robot_t *);
-extern int robot_load(FILE *, robot_t **);
-extern int robot_save(robot_t *, FILE *);
+/** Cardinal direction */
+typedef enum {
+	dir_east = 0,
+	dir_north = 1,
+	dir_west = 2,
+	dir_south = 3
+} dir_t;
 
 #endif
