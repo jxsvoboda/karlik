@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Jiri Svoboda
+ * Copyright 2022 Jiri Svoboda
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * copy of this software and associated documentation files (the "Software"),
@@ -188,7 +188,7 @@ void map_set(map_t *map, int x, int y, map_tile_t ttype)
  */
 map_tile_t map_get(map_t *map, int x, int y)
 {
-	if (x < 0 && y < 0 && x >= map->width && y >= map->height)
+	if (x < 0 || y < 0 || x >= map->width || y >= map->height)
 		return mapt_wall;
 
 	return map->tile[x][y];
@@ -261,4 +261,14 @@ int map_save(map_t *map, FILE *f)
 	}
 
 	return 0;
+}
+
+/** Return non-zero if robot can walk on a tile type.
+ *
+ * @param tile Tile type
+ * @return Non-zero if robot can enter this tile
+ */
+int map_tile_walkable(map_tile_t tile)
+{
+	return tile != mapt_wall;
 }

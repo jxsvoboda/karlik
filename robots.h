@@ -33,8 +33,10 @@
 typedef struct robots {
 	/** Map used by robots */
 	map_t *map;
-	/** List of robots (robot_t) sorted by Y ascending */
+	/** List of robots (robot_t) in stable, unsorted order */
 	list_t robots;
+	/** List of robots (robot_t) sorted by Y ascending */
+	list_t dorder;
 	/** Robot images */
 	gfx_bmp_t **image;
 	/** Number of images */
@@ -55,8 +57,15 @@ extern int robots_save(robots_t *, FILE *);
 extern void robots_destroy(robots_t *);
 extern int robots_add(robots_t *, int, int);
 extern void robots_remove(robots_t *, int, int);
+extern void robots_move_robot(robots_t *, robot_t *, int, int);
 extern robot_t *robots_first(robots_t *);
+extern robot_t *robots_last(robots_t *);
 extern robot_t *robots_next(robot_t *);
+extern robot_t *robots_prev(robot_t *);
+extern robot_t *robots_dorder_first(robots_t *);
+extern robot_t *robots_dorder_last(robots_t *);
+extern robot_t *robots_dorder_next(robot_t *);
+extern robot_t *robots_dorder_prev(robot_t *);
 extern robot_t *robots_get(robots_t *, int, int);
 extern void robots_draw(robots_t *, int, int, gfx_t *);
 extern int robots_load_img(robots_t *, int, int, int, const char **);

@@ -28,7 +28,9 @@
 #include <errno.h>
 #include <stdlib.h>
 #include "dir.h"
+#include "map.h"
 #include "robot.h"
+#include "robots.h"
 
 /** Create new robot.
  *
@@ -105,7 +107,37 @@ int robot_save(robot_t *robot, FILE *f)
 	return 0;
 }
 
+/** Turn robot left.
+ *
+ * @param robot Robot
+ */
 void robot_turn_left(robot_t *robot)
 {
 	robot->dir = dir_next_ccw(robot->dir);
+}
+
+/** Move robot one square forward.
+ *
+ * @param robot Robot
+ * @return Zero on success, EINVAL if the square ahead is not accessible.
+ */
+int robot_move(robot_t *robot)
+{
+	map_tile_t tile;
+	int xoff, yoff;
+
+	printf("robot_move: robot=%p x=%d y=%d dir=%d\n",
+	    robot, robot->x, robot->y, robot->dir);
+	/* Get tile in front of robot */
+	dir_get_off(robot->dir, &xoff, &yoff);
+	printf("xoff=%d yoff=%d\n", xoff, yoff);
+	tile = map_get(robot->robots->map, robot->x + xoff, robot->y + yoff);
+	printf("tile=%d\n", tile);
+
+	if (!map_tile_walkable(tile))
+		return EINVAL;
+
+	robots_move_robot(robot->robots, robot, xoff, yoff);
+
+	return 0;
 }

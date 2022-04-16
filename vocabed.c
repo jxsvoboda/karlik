@@ -297,7 +297,11 @@ static void vocabed_verbs_cb(void *arg, void *earg)
 
 	robot = robots_first(vocabed->robots);
 	while (robot != NULL) {
-		robot_turn_left(robot);
+		if (str == verb_icons[0])
+			robot_move(robot);
+		if (str == verb_icons[1])
+			robot_turn_left(robot);
+
 		robot = robots_next(robot);
 	}
 

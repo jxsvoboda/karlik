@@ -32,5 +32,6 @@ typedef enum {
 } dir_t;
 
 extern dir_t dir_next_ccw(dir_t);
+extern void dir_get_off(dir_t, int *, int *);
 
 #endif

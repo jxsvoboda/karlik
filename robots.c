@@ -30,6 +30,8 @@
 #include "robot.h"
 #include "robots.h"
 
+static void robots_add_robot(robots_t *, robot_t *);
+
 /** Create robots.
  *
  * @param map Map used by robots
@@ -46,6 +48,7 @@ int robots_create(map_t *map, robots_t **rrobots)
 		return ENOMEM;
 
 	list_initialize(&robots->robots);
+	list_initialize(&robots->dorder);
 	robots->map = map;
 	*rrobots = robots;
 	return 0;
@@ -100,8 +103,7 @@ int robots_load(FILE *f, map_t *map, robots_t **rrobots)
 		if (rc != 0)
 			goto error;
 
-		robot->robots = robots;
-		list_append(&robot->lrobots, &robots->robots);
+		robots_add_robot(robots, robot);
 	}
 
 	*rrobots = robots;
@@ -139,6 +141,28 @@ int robots_save(robots_t *robots, FILE *f)
 
 /** Add new robot at the specified tile coordinates.
  *
+ * @param robots Robots
+ * @param robot Robot
+ */
+static void robots_add_robot(robots_t *robots, robot_t *robot)
+{
+	robot_t *oldr;
+
+	oldr = robots_dorder_first(robots);
+	while (oldr != NULL && oldr->y < robot->y)
+		oldr = robots_dorder_next(oldr);
+
+	robot->robots = robots;
+	list_append(&robot->lrobots, &robots->robots);
+
+	if (oldr != NULL)
+		list_insert_before(&robot->ldorder, &oldr->ldorder);
+	else
+		list_append(&robot->ldorder, &robots->dorder);
+}
+
+/** Add new robot at the specified tile coordinates.
+ *
  * @param robots
  * @param x X tile coordinate
  * @param y Y tile coordinate
@@ -162,16 +186,7 @@ int robots_add(robots_t *robots, int x, int y)
 		return ENOMEM;
 	}
 
-	oldr = robots_first(robots);
-	while (oldr != NULL && oldr->y < y)
-		oldr = robots_next(oldr);
-
-	robot->robots = robots;
-	if (oldr != NULL)
-		list_insert_before(&robot->lrobots, &oldr->lrobots);
-	else
-		list_append(&robot->lrobots, &robots->robots);
-
+	robots_add_robot(robots, robot);
 	return 0;
 }
 
@@ -191,7 +206,47 @@ void robots_remove(robots_t *robots, int x, int y)
 		return;
 
 	list_remove(&oldr->lrobots);
+	list_remove(&oldr->ldorder);
 	robot_destroy(oldr);
+}
+
+/** Change robot position.
+ *
+ * @param robots Robots
+ * @param robot Robot
+ * @param dx X coordinate change
+ * @param dy Y coordinate change
+ */
+void robots_move_robot(robots_t *robots, robot_t *robot, int dx, int dy)
+{
+	robot_t *next;
+
+	printf("robots_move_robot(robot=%p dx=%d dy=%d\n",
+	    robot, dx, dy);
+	if (dy < 0) {
+		next = robots_dorder_prev(robot);
+		while (next != NULL && robot->y + dy < next->y)
+			next = robots_dorder_prev(next);
+
+		list_remove(&robot->ldorder);
+		if (next != NULL)
+			list_insert_before(&robot->ldorder, &next->ldorder);
+		else
+			list_prepend(&robot->ldorder, &robots->dorder);
+	} else {
+		next = robots_dorder_next(robot);
+		while (next != NULL && robot->y + dy > next->y)
+			next = robots_dorder_next(next);
+
+		list_remove(&robot->ldorder);
+		if (next != NULL)
+			list_insert_after(&robot->ldorder, &next->ldorder);
+		else
+			list_append(&robot->ldorder, &robots->dorder);
+	}
+
+	robot->x += dx;
+	robot->y += dy;
 }
 
 /** Get first robot.
@@ -204,6 +259,22 @@ robot_t *robots_first(robots_t *robots)
 	link_t *link;
 
 	link = list_first(&robots->robots);
+	if (link == NULL)
+		return NULL;
+
+	return list_get_instance(link, robot_t, lrobots);
+}
+
+/** Get last robot.
+ *
+ * @param robots Robot
+ * @return Last robot or @c NULL if there are no robots
+ */
+robot_t *robots_last(robots_t *robots)
+{
+	link_t *link;
+
+	link = list_last(&robots->robots);
 	if (link == NULL)
 		return NULL;
 
@@ -224,6 +295,86 @@ robot_t *robots_next(robot_t *cur)
 		return NULL;
 
 	return list_get_instance(link, robot_t, lrobots);
+}
+
+/** Get previous robot.
+ *
+ * @param cur Current robot
+ * @return Previous robot or @c NULL if @a cur is the first
+ */
+robot_t *robots_prev(robot_t *cur)
+{
+	link_t *link;
+
+	link = list_prev(&cur->lrobots, &cur->robots->robots);
+	if (link == NULL)
+		return NULL;
+
+	return list_get_instance(link, robot_t, lrobots);
+}
+
+/** Get first robot in display order.
+ *
+ * @param robots Robot
+ * @return First robot in display order or @c NULL if there are no robots
+ */
+robot_t *robots_dorder_first(robots_t *robots)
+{
+	link_t *link;
+
+	link = list_first(&robots->dorder);
+	if (link == NULL)
+		return NULL;
+
+	return list_get_instance(link, robot_t, ldorder);
+}
+
+/** Get last robot in display order.
+ *
+ * @param robots Robot
+ * @return Last robot in display order or @c NULL if there are no robots
+ */
+robot_t *robots_dorder_last(robots_t *robots)
+{
+	link_t *link;
+
+	link = list_last(&robots->dorder);
+	if (link == NULL)
+		return NULL;
+
+	return list_get_instance(link, robot_t, ldorder);
+}
+
+/** Get next robot in display order.
+ *
+ * @param cur Current robot
+ * @return Next robot in display order or @c NULL if @a cur is the last
+ */
+robot_t *robots_dorder_next(robot_t *cur)
+{
+	link_t *link;
+
+	link = list_next(&cur->ldorder, &cur->robots->dorder);
+	if (link == NULL)
+		return NULL;
+
+	return list_get_instance(link, robot_t, ldorder);
+}
+
+/** Get previous robot in display order.
+ *
+ * @param cur Current robot
+ * @return Previous robot in display order or @c NULL if @a cur is the first
+ */
+robot_t *robots_dorder_prev(robot_t *cur)
+{
+	link_t *link;
+
+	link = list_prev(&cur->ldorder, &cur->robots->dorder);
+	if (link == NULL)
+		return NULL;
+
+	return list_get_instance(link, robot_t, ldorder);
 }
 
 /** Get robot by tile coordinates.
@@ -263,7 +414,7 @@ void robots_draw(robots_t *robots, int orig_x, int orig_y, gfx_t *gfx)
 	if (robots->nimages < 4)
 		return;
 
-	robot = robots_first(robots);
+	robot = robots_dorder_first(robots);
 	while (robot != NULL) {
 		x = orig_x + robots->tile_w * robot->x + robots->rel_x;
 		y = orig_y + robots->tile_h * robot->y + robots->rel_y;
@@ -271,7 +422,7 @@ void robots_draw(robots_t *robots, int orig_x, int orig_y, gfx_t *gfx)
 
 		gfx_bmp_render(gfx, robots->image[dir], x, y);
 
-		robot = robots_next(robot);
+		robot = robots_dorder_next(robot);
 	}
 }
 

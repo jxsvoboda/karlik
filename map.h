@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Jiri Svoboda
+ * Copyright 2022 Jiri Svoboda
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * copy of this software and associated documentation files (the "Software"),
@@ -72,5 +72,6 @@ extern map_tile_t map_get(map_t *, int, int);
 extern int map_load_tile_img(map_t *, const char **);
 extern int map_load(FILE *, map_t **);
 extern int map_save(map_t *, FILE *);
+extern int map_tile_walkable(map_tile_t);
 
 #endif

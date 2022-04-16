@@ -33,6 +33,8 @@ typedef struct {
 	struct robots *robots;
 	/** Link to @c robots->robots */
 	link_t lrobots;
+	/** Link to @c robots->dorder */
+	link_t ldorder;
 	/** X tile coordinate */
 	int x;
 	/** Y tile coordinate */
@@ -46,5 +48,6 @@ extern void robot_destroy(robot_t *);
 extern int robot_load(FILE *, robot_t **);
 extern int robot_save(robot_t *, FILE *);
 extern void robot_turn_left(robot_t *);
+extern int robot_move(robot_t *);
 
 #endif

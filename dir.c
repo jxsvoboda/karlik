@@ -38,3 +38,34 @@ dir_t dir_next_ccw(dir_t cur)
 	else
 		return dir_east;
 }
+
+/** Get X and Y offset for cardinal direction.
+ *
+ * @param dir Direction
+ * @param x Place to store X offset
+ * @param y Place to store Y offset
+ */
+void dir_get_off(dir_t dir, int *x, int *y)
+{
+	*x = 0;
+	*y = 0;
+
+	switch (dir) {
+	case dir_east:
+		*x = +1;
+		*y = 0;
+		break;
+	case dir_north:
+		*x = 0;
+		*y = -1;
+		break;
+	case dir_west:
+		*x = -1;
+		*y = 0;
+		break;
+	case dir_south:
+		*x = 0;
+		*y = +1;
+		break;
+	}
+}
