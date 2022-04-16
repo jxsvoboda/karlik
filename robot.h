@@ -49,5 +49,9 @@ extern int robot_load(FILE *, robot_t **);
 extern int robot_save(robot_t *, FILE *);
 extern void robot_turn_left(robot_t *);
 extern int robot_move(robot_t *);
+extern int robot_put_white(robot_t *);
+extern int robot_put_grey(robot_t *);
+extern int robot_put_black(robot_t *);
+extern int robot_pick_up(robot_t *);
 
 #endif

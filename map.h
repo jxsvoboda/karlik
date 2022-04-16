@@ -73,5 +73,6 @@ extern int map_load_tile_img(map_t *, const char **);
 extern int map_load(FILE *, map_t **);
 extern int map_save(map_t *, FILE *);
 extern int map_tile_walkable(map_tile_t);
+extern int map_tile_tag(map_tile_t);
 
 #endif

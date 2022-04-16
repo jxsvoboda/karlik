@@ -126,18 +126,93 @@ int robot_move(robot_t *robot)
 	map_tile_t tile;
 	int xoff, yoff;
 
-	printf("robot_move: robot=%p x=%d y=%d dir=%d\n",
-	    robot, robot->x, robot->y, robot->dir);
 	/* Get tile in front of robot */
 	dir_get_off(robot->dir, &xoff, &yoff);
-	printf("xoff=%d yoff=%d\n", xoff, yoff);
 	tile = map_get(robot->robots->map, robot->x + xoff, robot->y + yoff);
-	printf("tile=%d\n", tile);
 
 	if (!map_tile_walkable(tile))
 		return EINVAL;
 
 	robots_move_robot(robot->robots, robot, xoff, yoff);
 
+	return 0;
+}
+
+/** Put down white tag.
+ *
+ * @param robot Robot
+ * @return Zero on success, EINVAL if the square is not empty.
+ */
+int robot_put_white(robot_t *robot)
+{
+	map_tile_t tile;
+
+	/* Get tile under robot */
+	tile = map_get(robot->robots->map, robot->x, robot->y);
+
+	if (tile != mapt_none)
+		return EINVAL;
+
+	map_set(robot->robots->map, robot->x, robot->y, mapt_wtag);
+
+	return 0;
+}
+
+/** Put down grey tag.
+ *
+ * @param robot Robot
+ * @return Zero on success, EINVAL if the square is not empty.
+ */
+int robot_put_grey(robot_t *robot)
+{
+	map_tile_t tile;
+
+	/* Get tile under robot */
+	tile = map_get(robot->robots->map, robot->x, robot->y);
+
+	if (tile != mapt_none)
+		return EINVAL;
+
+	map_set(robot->robots->map, robot->x, robot->y, mapt_gtag);
+
+	return 0;
+}
+
+/** Put down black tag.
+ *
+ * @param robot Robot
+ * @return Zero on success, EINVAL if the square is not empty.
+ */
+int robot_put_black(robot_t *robot)
+{
+	map_tile_t tile;
+
+	/* Get tile under robot */
+	tile = map_get(robot->robots->map, robot->x, robot->y);
+
+	if (tile != mapt_none)
+		return EINVAL;
+
+	map_set(robot->robots->map, robot->x, robot->y, mapt_btag);
+
+	return 0;
+}
+
+/** Pick up tag.
+ *
+ * @param robot Robot
+ * @return Zero on success, EINVAL if the square is empty.
+ */
+int robot_pick_up(robot_t *robot)
+{
+	map_tile_t tile;
+
+	/* Get tile under robot */
+	tile = map_get(robot->robots->map, robot->x, robot->y);
+
+	if (!map_tile_tag(tile))
+		return EINVAL;
+
+	map_set(robot->robots->map, robot->x, robot->y, mapt_none);
 	return 0;
 }

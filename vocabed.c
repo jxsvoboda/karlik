@@ -301,6 +301,14 @@ static void vocabed_verbs_cb(void *arg, void *earg)
 			robot_move(robot);
 		if (str == verb_icons[1])
 			robot_turn_left(robot);
+		if (str == verb_icons[2])
+			robot_put_white(robot);
+		if (str == verb_icons[3])
+			robot_put_grey(robot);
+		if (str == verb_icons[4])
+			robot_put_black(robot);
+		if (str == verb_icons[5])
+			robot_pick_up(robot);
 
 		robot = robots_next(robot);
 	}

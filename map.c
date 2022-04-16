@@ -272,3 +272,13 @@ int map_tile_walkable(map_tile_t tile)
 {
 	return tile != mapt_wall;
 }
+
+/** Return non-zero if map tile contains a tag (of any color).
+ *
+ * @param tile Tile type
+ * @return Non-zero if map tile contains tag
+ */
+int map_tile_tag(map_tile_t tile)
+{
+	return tile == mapt_btag || tile == mapt_gtag || tile == mapt_wtag;
+}
