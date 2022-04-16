@@ -1,7 +1,7 @@
 #
 # Karlik - Programming for preschoolers
 #
-# Copyright 2020 Jiri Svoboda
+# Copyright 2022 Jiri Svoboda
 #
 # Permission is hereby granted, free of charge, to any person obtaining 
 # copy of this software and associated documentation files (the "Software"),
@@ -28,6 +28,7 @@ LIBS	= `pkg-config --libs sdl2`
 
 sources = \
 	adt/list.c \
+	dir.c \
 	gfx.c \
 	karlik.c \
 	main.c \

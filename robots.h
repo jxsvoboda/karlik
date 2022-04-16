@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Jiri Svoboda
+ * Copyright 2022 Jiri Svoboda
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * copy of this software and associated documentation files (the "Software"),
@@ -55,6 +55,8 @@ extern int robots_save(robots_t *, FILE *);
 extern void robots_destroy(robots_t *);
 extern int robots_add(robots_t *, int, int);
 extern void robots_remove(robots_t *, int, int);
+extern robot_t *robots_first(robots_t *);
+extern robot_t *robots_next(robot_t *);
 extern robot_t *robots_get(robots_t *, int, int);
 extern void robots_draw(robots_t *, int, int, gfx_t *);
 extern int robots_load_img(robots_t *, int, int, int, const char **);

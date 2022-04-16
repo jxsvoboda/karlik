@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Jiri Svoboda
+ * Copyright 2022 Jiri Svoboda
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * copy of this software and associated documentation files (the "Software"),
@@ -42,6 +42,8 @@ typedef struct {
 	mapview_t *mapview;
 	/** Verb view */
 	wordlist_t *verbs;
+	/** Robots */
+	robots_t *robots;
 	/** Callbacks */
 	vocabed_cb_t *cb;
 	/** Callback argument */

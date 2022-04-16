@@ -30,9 +30,6 @@
 #include "robot.h"
 #include "robots.h"
 
-static robot_t *robots_first(robots_t *);
-static robot_t *robots_next(robot_t *);
-
 /** Create robots.
  *
  * @param map Map used by robots
@@ -202,7 +199,7 @@ void robots_remove(robots_t *robots, int x, int y)
  * @param robots Robot
  * @return First robot or @c NULL if there are no robots
  */
-static robot_t *robots_first(robots_t *robots)
+robot_t *robots_first(robots_t *robots)
 {
 	link_t *link;
 
@@ -218,7 +215,7 @@ static robot_t *robots_first(robots_t *robots)
  * @param cur Current robot
  * @return Next robot or @c NULL if @a cur is the last
  */
-static robot_t *robots_next(robot_t *cur)
+robot_t *robots_next(robot_t *cur)
 {
 	link_t *link;
 

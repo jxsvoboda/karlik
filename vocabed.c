@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Jiri Svoboda
+ * Copyright 2022 Jiri Svoboda
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * copy of this software and associated documentation files (the "Software"),
@@ -131,6 +131,8 @@ static int vocabed_create(map_t *map, robots_t *robots, vocabed_cb_t *cb,
 
 	vocabed->cb = cb;
 	vocabed->arg = arg;
+
+	vocabed->robots = robots;
 
 	*rvocabed = vocabed;
 	return 0;
@@ -288,9 +290,18 @@ static void vocabed_verbs_cb(void *arg, void *earg)
 {
 	vocabed_t *vocabed = (vocabed_t *)arg;
 	const char *str = (const char *)earg;
+	robot_t *robot;
 
 	(void)vocabed;
 	printf("Entry '%s'\n", str);
+
+	robot = robots_first(vocabed->robots);
+	while (robot != NULL) {
+		robot_turn_left(robot);
+		robot = robots_next(robot);
+	}
+
+	vocabed_repaint_req(vocabed);
 }
 
 /** Set up vocabulary editor's mapview for use.

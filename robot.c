@@ -104,3 +104,8 @@ int robot_save(robot_t *robot, FILE *f)
 
 	return 0;
 }
+
+void robot_turn_left(robot_t *robot)
+{
+	robot->dir = dir_next_ccw(robot->dir);
+}

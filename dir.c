@@ -20,31 +20,21 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef ROBOT_H
-#define ROBOT_H
+/*
+ * Cardinal direction
+ */
 
-#include <stdio.h>
-#include "adt/list.h"
 #include "dir.h"
 
-/** Robot */
-typedef struct {
-	/** Containing robots structure */
-	struct robots *robots;
-	/** Link to @c robots->robots */
-	link_t lrobots;
-	/** X tile coordinate */
-	int x;
-	/** Y tile coordinate */
-	int y;
-	/** Direction robot is facing */
-	dir_t dir;
-} robot_t;
-
-extern int robot_create(int, int, dir_t, robot_t **);
-extern void robot_destroy(robot_t *);
-extern int robot_load(FILE *, robot_t **);
-extern int robot_save(robot_t *, FILE *);
-extern void robot_turn_left(robot_t *);
-
-#endif
+/** Next direction counter-clockwise.
+ *
+ * @param cur Current direction
+ * @return Next direction
+ */
+dir_t dir_next_ccw(dir_t cur)
+{
+	if (cur < dir_south)
+		return cur + 1;
+	else
+		return dir_east;
+}

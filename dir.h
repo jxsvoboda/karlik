@@ -31,4 +31,6 @@ typedef enum {
 	dir_south = 3
 } dir_t;
 
+extern dir_t dir_next_ccw(dir_t);
+
 #endif
