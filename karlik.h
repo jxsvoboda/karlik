@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Jiri Svoboda
+ * Copyright 2022 Jiri Svoboda
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * copy of this software and associated documentation files (the "Software"),
@@ -27,6 +27,7 @@
 #include <stdbool.h>
 #include "gfx.h"
 #include "mapedit.h"
+#include "prog.h"
 #include "robots.h"
 #include "toolbar.h"
 #include "vocabed.h"
@@ -55,6 +56,8 @@ typedef struct {
 	robots_t *robots;
 	/** Map editor */
 	mapedit_t *mapedit;
+	/** Program */
+	prog_module_t *prog;
 	/** Vocabulary editor */
 	vocabed_t *vocabed;
 } karlik_t;

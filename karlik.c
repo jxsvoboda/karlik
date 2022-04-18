@@ -32,6 +32,7 @@
 #include "gfx.h"
 #include "karlik.h"
 #include "mapedit.h"
+#include "prog.h"
 #include "toolbar.h"
 #include "vocabed.h"
 
@@ -171,6 +172,10 @@ static int karlik_new(karlik_t *karlik)
 	if (rc != 0)
 		return rc;
 
+	rc = prog_module_create(&karlik->prog);
+	if (rc != 0)
+		return rc;
+
 	rc = mapedit_new(karlik->map, karlik->robots, &karlik_mapedit_cb,
 	    (void *)karlik, &karlik->mapedit);
 	if (rc != 0)
@@ -212,6 +217,10 @@ static int karlik_load(karlik_t *karlik)
 		return rc;
 
 	rc = karlik_robots_setup(karlik);
+	if (rc != 0)
+		return rc;
+
+	rc = prog_module_load(f, &karlik->prog);
 	if (rc != 0)
 		return rc;
 
@@ -264,6 +273,10 @@ int karlik_save(karlik_t *karlik)
 		goto error;
 
 	rc = robots_save(karlik->robots, f);
+	if (rc != 0)
+		goto error;
+
+	rc = prog_module_save(karlik->prog, f);
 	if (rc != 0)
 		goto error;
 
@@ -446,6 +459,8 @@ void karlik_destroy(karlik_t *karlik)
 		toolbar_destroy(karlik->main_tb);
 	if (karlik->map != NULL)
 		map_destroy(karlik->map);
+	if (karlik->prog != NULL)
+		prog_module_destroy(karlik->prog);
 	if (karlik->mapedit != NULL)
 		mapedit_destroy(karlik->mapedit);
 	if (karlik->vocabed != NULL)
