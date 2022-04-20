@@ -216,3 +216,91 @@ int robot_pick_up(robot_t *robot)
 	map_set(robot->robots->map, robot->x, robot->y, mapt_none);
 	return 0;
 }
+
+/** Start executing procedure.
+ *
+ * Start executing program (run a procedure).
+ *
+ * @param robot Robot
+ * @param proc Procedure
+ * @return Zero on success. EBUSY if robot is already busy executing code.
+ */
+int robot_run_proc(robot_t *robot, prog_proc_t *proc)
+{
+	if (robot->cur_stmt != NULL)
+		return EBUSY;
+
+	robot->cur_stmt = prog_block_first(proc->body);
+	return 0;
+}
+
+/** Determine if robot is busy executing code.
+ *
+ * @param robot Robot
+ * @return Non-zero if robot is executing code, zero if it is not.
+ */
+int robot_is_busy(robot_t *robot)
+{
+	return robot->cur_stmt != NULL;
+}
+
+/** Step intrinsic statement.
+ *
+ * Steps the next statement, which must be an intrinsic statement.
+ * @param robot Robot
+ * @return Zero on success or an error code
+ */
+static int robot_stmt_intrinsic(robot_t *robot)
+{
+	int rc = 0;
+
+	assert(robot->cur_stmt->stype == progst_intrinsic);
+
+	switch (robot->cur_stmt->s.sintr.itype) {
+	case progin_turn_left:
+		robot_turn_left(robot);
+		rc = 0;
+		break;
+	case progin_move:
+		rc = robot_move(robot);
+		break;
+	case progin_put_white:
+		rc = robot_put_white(robot);
+		break;
+	case progin_put_grey:
+		rc = robot_put_grey(robot);
+		break;
+	case progin_put_black:
+		rc = robot_put_black(robot);
+		break;
+	case progin_pick_up:
+		rc = robot_pick_up(robot);
+		break;
+	}
+
+	robot->cur_stmt = prog_block_next(robot->cur_stmt);
+	return rc;
+}
+
+/** Advance one step in robot execution.
+ *
+ * @parm robot Robot
+ * @return Zero on success or an error code
+ */
+int robot_step(robot_t *robot)
+{
+	int rc;
+
+	if (robot->cur_stmt == NULL)
+		return EINVAL;
+
+	switch (robot->cur_stmt->stype) {
+	case progst_intrinsic:
+		rc = robot_stmt_intrinsic(robot);
+		break;
+	default:
+		return ENOTSUP;
+	}
+
+	return rc;
+}

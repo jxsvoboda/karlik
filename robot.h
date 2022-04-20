@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include "adt/list.h"
 #include "dir.h"
+#include "prog.h"
 
 /** Robot */
 typedef struct {
@@ -41,6 +42,8 @@ typedef struct {
 	int y;
 	/** Direction robot is facing */
 	dir_t dir;
+	/** Current statement or @c NULL if not executing code */
+	prog_stmt_t *cur_stmt;
 } robot_t;
 
 extern int robot_create(int, int, dir_t, robot_t **);
@@ -53,5 +56,8 @@ extern int robot_put_white(robot_t *);
 extern int robot_put_grey(robot_t *);
 extern int robot_put_black(robot_t *);
 extern int robot_pick_up(robot_t *);
+extern int robot_run_proc(robot_t *, prog_proc_t *);
+extern int robot_is_busy(robot_t *);
+extern int robot_step(robot_t *);
 
 #endif

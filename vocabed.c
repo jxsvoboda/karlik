@@ -540,6 +540,10 @@ static void vocabed_immed_verb_selected(void *arg, void *earg)
 		case verb_pick_up:
 			robot_pick_up(robot);
 			break;
+		case verb_call:
+			robot_run_proc(robot, verb->v.vcall.proc);
+			while (robot_is_busy(robot))
+				robot_step(robot);
 		default:
 			break;
 		}
@@ -584,16 +588,35 @@ static void vocabed_learn_intrinsic(vocabed_t *vocabed, prog_intr_type_t itype)
 static void vocabed_learn_verb_selected(void *arg, void *earg)
 {
 	vocabed_t *vocabed = (vocabed_t *)arg;
-	const char *str = (const char *)earg;
+	vocabed_verb_t *verb = (vocabed_verb_t *)earg;
 
-	printf("Learn mode. Entry '%s'\n", str);
+	printf("Learn mode. Verb type '%u'\n", verb->vtype);
 
-	if (str == verb_icon_files[verb_move])
+	switch (verb->vtype) {
+	case verb_move:
 		vocabed_learn_intrinsic(vocabed, progin_move);
-	if (str == verb_icon_files[verb_turn_left])
+		break;
+	case verb_turn_left:
 		vocabed_learn_intrinsic(vocabed, progin_turn_left);
-	if (str == verb_icon_files[verb_end])
+		break;
+	case verb_put_white:
+		vocabed_learn_intrinsic(vocabed, progin_put_white);
+		break;
+	case verb_put_grey:
+		vocabed_learn_intrinsic(vocabed, progin_put_grey);
+		break;
+	case verb_put_black:
+		vocabed_learn_intrinsic(vocabed, progin_put_black);
+		break;
+	case verb_pick_up:
+		vocabed_learn_intrinsic(vocabed, progin_pick_up);
+		break;
+	case verb_end:
 		vocabed_learn_end(vocabed);
+		break;
+	default:
+		break;
+	}
 
 	vocabed_repaint_req(vocabed);
 }
