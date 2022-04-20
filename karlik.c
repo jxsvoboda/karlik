@@ -181,8 +181,8 @@ static int karlik_new(karlik_t *karlik)
 	if (rc != 0)
 		return rc;
 
-	rc = vocabed_new(karlik->map, karlik->robots, &karlik_vocabed_cb,
-	    (void *)karlik, &karlik->vocabed);
+	rc = vocabed_new(karlik->map, karlik->robots, karlik->prog,
+	    &karlik_vocabed_cb, (void *)karlik, &karlik->vocabed);
 	if (rc != 0)
 		return rc;
 
@@ -239,8 +239,8 @@ static int karlik_load(karlik_t *karlik)
 		goto error;
 	}
 
-	rc = vocabed_load(karlik->map, karlik->robots, f, &karlik_vocabed_cb,
-	    (void *)karlik, &karlik->vocabed);
+	rc = vocabed_load(karlik->map, karlik->robots, karlik->prog, f,
+	    &karlik_vocabed_cb, (void *)karlik, &karlik->vocabed);
 	if (rc != 0) {
 		rc = EIO;
 		goto error;

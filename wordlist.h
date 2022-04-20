@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Jiri Svoboda
+ * Copyright 2022 Jiri Svoboda
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * copy of this software and associated documentation files (the "Software"),
@@ -67,6 +67,7 @@ extern void wordlist_set_origin(wordlist_t *, int, int);
 extern void wordlist_set_cb(wordlist_t *, wordlist_cb_t, void *);
 extern void wordlist_destroy(wordlist_t *);
 extern int wordlist_add(wordlist_t *, gfx_bmp_t *, void *);
+extern void wordlist_clear(wordlist_t *);
 extern void wordlist_draw(wordlist_t *, gfx_t *);
 extern bool wordlist_event(wordlist_t *, SDL_Event *);
 

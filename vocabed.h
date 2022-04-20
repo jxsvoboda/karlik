@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include "gfx.h"
 #include "mapview.h"
+#include "prog.h"
 #include "robots.h"
 #include "toolbar.h"
 #include "wordlist.h"
@@ -35,6 +36,27 @@
 typedef struct {
 	void (*repaint)(void *);
 } vocabed_cb_t;
+
+/** Vocabulary editor predefined verbs */
+typedef enum {
+	verb_move,
+	verb_turn_left,
+	verb_put_white,
+	verb_put_grey,
+	verb_put_black,
+	verb_pick_up,
+	verb_learn,
+	verb_end,
+	verb_limit
+} vocabed_verb_t;
+
+/** Vocabulary editor state */
+typedef enum {
+	/** Immediate command state */
+	vst_immed,
+	/** Learn new procedure state */
+	vst_learn
+} vocabed_state_t;
 
 /** Map editor */
 typedef struct {
@@ -44,16 +66,25 @@ typedef struct {
 	wordlist_t *verbs;
 	/** Robots */
 	robots_t *robots;
+	/** Program module */
+	prog_module_t *prog;
+	/** Procedure currently learning */
+	prog_proc_t *learn_proc;
+	/** State */
+	vocabed_state_t state;
 	/** Callbacks */
 	vocabed_cb_t *cb;
+	/** Verb icons */
+	gfx_bmp_t *verb_icons[verb_limit];
 	/** Callback argument */
 	void *arg;
 } vocabed_t;
 
-extern int vocabed_new(map_t *, robots_t *, vocabed_cb_t *, void *,
+extern int vocabed_new(map_t *, robots_t *, prog_module_t *, vocabed_cb_t *,
+    void *,
     vocabed_t **);
-extern int vocabed_load(map_t *, robots_t *, FILE *, vocabed_cb_t *, void *,
-    vocabed_t **);
+extern int vocabed_load(map_t *, robots_t *, prog_module_t *, FILE *,
+    vocabed_cb_t *, void *, vocabed_t **);
 extern void vocabed_destroy(vocabed_t *);
 extern void vocabed_display(vocabed_t *, gfx_t *gfx);
 extern int vocabed_save(vocabed_t *, FILE *);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Jiri Svoboda
+ * Copyright 2022 Jiri Svoboda
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * copy of this software and associated documentation files (the "Software"),
@@ -87,16 +87,7 @@ void wordlist_set_cb(wordlist_t *wordlist, wordlist_cb_t cb, void *arg)
  */
 void wordlist_destroy(wordlist_t *wordlist)
 {
-	wordlist_entry_t *entry;
-
-	entry = wordlist_first(wordlist);
-	while (entry != NULL) {
-		list_remove(&entry->lwlist);
-		free(entry);
-
-		entry = wordlist_first(wordlist);
-	}
-
+	wordlist_clear(wordlist);
 	free(wordlist);
 }
 
@@ -122,6 +113,23 @@ int wordlist_add(wordlist_t *wordlist, gfx_bmp_t *icon, void *arg)
 	entry->arg = arg;
 
 	return 0;
+}
+
+/** Clear all words from wordlist.
+ *
+ * @param wordlist Wordlist
+ */
+void wordlist_clear(wordlist_t *wordlist)
+{
+	wordlist_entry_t *entry;
+
+	entry = wordlist_first(wordlist);
+	while (entry != NULL) {
+		list_remove(&entry->lwlist);
+		free(entry);
+
+		entry = wordlist_first(wordlist);
+	}
 }
 
 /** Draw wordlist.

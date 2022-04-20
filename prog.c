@@ -149,6 +149,36 @@ int prog_module_save(prog_module_t *mod, FILE *f)
 	return 0;
 }
 
+/** Generate new procedure identifier.
+ *
+ * @param mod Module that will contain the procedure
+ * @param rident Place to store pointer to newly allocated string
+ * @return EOK on success, ENOMEM if out of memory
+ */
+int prog_module_gen_ident(prog_module_t *mod, char **rident)
+{
+	char *ident;
+	unsigned i;
+	prog_proc_t *proc;
+
+	ident = malloc(prog_proc_id_len + 1);
+	if (ident == NULL)
+		return ENOMEM;
+
+	do {
+		/* Generate a new identifier */
+		for (i = 0; i < prog_proc_id_len; i++) {
+			ident[i] = 'A' + random() % 26;
+		}
+
+		proc = prog_module_proc_by_ident(mod, ident);
+	} while (proc != NULL);
+
+	ident[i] = '\0';
+	*rident = ident;
+	return 0;
+}
+
 /** Get first procedure in module.
  *
  * @param mod Module

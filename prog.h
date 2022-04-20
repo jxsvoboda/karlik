@@ -178,6 +178,7 @@ extern void prog_module_destroy(prog_module_t *);
 extern void prog_module_append(prog_module_t *, prog_proc_t *);
 extern int prog_module_load(FILE *, prog_module_t **);
 extern int prog_module_save(prog_module_t *, FILE *);
+extern int prog_module_gen_ident(prog_module_t *, char **);
 extern prog_proc_t *prog_module_first(prog_module_t *);
 extern prog_proc_t *prog_module_next(prog_proc_t *);
 extern prog_proc_t *prog_module_last(prog_module_t *);

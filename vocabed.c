@@ -42,18 +42,36 @@ enum {
 	orig_y = 240
 };
 
-static const char *verb_icons[] = {
-	"img/verb/move.bmp",
-	"img/verb/turnleft.bmp",
-	"img/verb/putwhite.bmp",
-	"img/verb/putgrey.bmp",
-	"img/verb/putblack.bmp",
-	"img/verb/pickup.bmp",
-	NULL
+/** Verb icon files */
+static const char *verb_icon_files[] = {
+	[verb_move] = "img/verb/move.bmp",
+	[verb_turn_left] = "img/verb/turnleft.bmp",
+	[verb_put_white] = "img/verb/putwhite.bmp",
+	[verb_put_grey] = "img/verb/putgrey.bmp",
+	[verb_put_black] = "img/verb/putblack.bmp",
+	[verb_pick_up] = "img/verb/pickup.bmp",
+	[verb_learn] = "img/verb/learn.bmp",
+	[verb_end] = "img/verb/end.bmp",
+	[verb_limit] = NULL
 };
 
+/** Verbs corresponding to intrinsic statements */
+static const vocabed_verb_t intrinsic_verbs[] = {
+	verb_move,
+	verb_turn_left,
+	verb_put_white,
+	verb_put_grey,
+	verb_put_black,
+	verb_pick_up,
+	verb_limit
+};
+
+static int vocabed_add_statement_verbs(vocabed_t *);
+static int vocabed_add_predefined_verb(vocabed_t *, vocabed_verb_t);
 static void vocabed_map_setup(vocabed_t *);
-static void vocabed_verbs_cb(void *, void *);
+static void vocabed_learn(vocabed_t *);
+static void vocabed_immed_verbs_cb(void *, void *);
+static void vocabed_learn_verbs_cb(void *, void *);
 
 /** Display vocabulary editor.
  *
@@ -75,21 +93,80 @@ static void vocabed_repaint_req(vocabed_t *vocabed)
 	vocabed->cb->repaint(vocabed->arg);
 }
 
+/** Set up vocabulary editor immediate state.
+ *
+ * @param vocabed Vocabulary editor
+ */
+static int vocabed_immed(vocabed_t *vocabed)
+{
+	int rc;
+
+	vocabed->state = vst_immed;
+
+	wordlist_clear(vocabed->verbs);
+	wordlist_set_cb(vocabed->verbs, vocabed_immed_verbs_cb, vocabed);
+
+	rc = vocabed_add_statement_verbs(vocabed);
+	if (rc != 0)
+		return rc;
+
+	rc = vocabed_add_predefined_verb(vocabed, verb_learn);
+	if (rc != 0)
+		return rc;
+
+	return 0;
+}
+
+/** Add predefined verb to the verb list.
+ *
+ * @param vocabed Vocabulary editor
+ * @param verb Predefined verb
+ * @return EOK on success or an error code
+ */
+static int vocabed_add_predefined_verb(vocabed_t *vocabed, vocabed_verb_t verb)
+{
+	return wordlist_add(vocabed->verbs, vocabed->verb_icons[verb],
+	    (void *) verb_icon_files[verb]);
+}
+
+/** Add statement verbs to the verb list.
+ *
+ * @param vocabed Vocabulary editor
+ */
+static int vocabed_add_statement_verbs(vocabed_t *vocabed)
+{
+	int rc;
+	unsigned i;
+
+	/* Verbs for intrinsic statements */
+	i = 0;
+	while (intrinsic_verbs[i] < verb_limit) {
+		rc = vocabed_add_predefined_verb(vocabed, intrinsic_verbs[i]);
+		if (rc != 0)
+			return rc;
+
+		++i;
+	}
+
+	return 0;
+}
+
 /** Create vocabulary editor.
  *
  * @param map Map
  * @param robots Robots
+ * @param prog Program module
  * @param cb Callbacks
  * @param arg Callback arguments
  * @param rvocabed Place to store pointer to new vocabulary editor
  * @return Zero on success or an error code
  */
-static int vocabed_create(map_t *map, robots_t *robots, vocabed_cb_t *cb,
-    void *arg, vocabed_t **rvocabed)
+static int vocabed_create(map_t *map, robots_t *robots, prog_module_t *prog,
+    vocabed_cb_t *cb, void *arg, vocabed_t **rvocabed)
 {
 	vocabed_t *vocabed;
 	const char **cp;
-	gfx_bmp_t *icon;
+	unsigned i;
 	int rc;
 
 	vocabed = calloc(1, sizeof(vocabed_t));
@@ -97,42 +174,37 @@ static int vocabed_create(map_t *map, robots_t *robots, vocabed_cb_t *cb,
 		return ENOMEM;
 
 	rc = mapview_create(map, robots, &vocabed->mapview);
-	if (rc != 0) {
-		rc = ENOMEM;
+	if (rc != 0)
 		goto error;
-	}
 
 	rc = wordlist_create(&vocabed->verbs);
-	if (rc != 0) {
-		rc = ENOMEM;
+	if (rc != 0)
 		goto error;
-	}
 
 	wordlist_set_origin(vocabed->verbs, 0, 214);
-	wordlist_set_cb(vocabed->verbs, vocabed_verbs_cb, vocabed);
+	wordlist_set_cb(vocabed->verbs, vocabed_immed_verbs_cb, vocabed);
 
-	cp = verb_icons;
+	cp = verb_icon_files;
+	i = 0;
 	while (*cp != NULL) {
 		printf("Load '%s'\n", *cp);
-		rc = gfx_bmp_load(*cp, &icon);
-		if (rc != 0) {
-			rc = ENOMEM;
+		rc = gfx_bmp_load(*cp, &vocabed->verb_icons[i]);
+		if (rc != 0)
 			goto error;
-		}
-
-		rc = wordlist_add(vocabed->verbs, icon, (void *) *cp);
-		if (rc != 0) {
-			rc = ENOMEM;
-			goto error;
-		}
 
 		++cp;
+		++i;
 	}
+
+	rc = vocabed_immed(vocabed);
+	if (rc != 0)
+		goto error;
 
 	vocabed->cb = cb;
 	vocabed->arg = arg;
 
 	vocabed->robots = robots;
+	vocabed->prog = prog;
 
 	*rvocabed = vocabed;
 	return 0;
@@ -145,18 +217,19 @@ error:
  *
  * @param map Map
  * @param robots Robots
+ * @param prog Program module
  * @param cb Callbacks
  * @param arg Callback arguments
  * @param rvocabed Place to store pointer to new vocabulary editor
  * @return Zero on success or an error code
  */
-int vocabed_new(map_t *map, robots_t *robots, vocabed_cb_t *cb, void *arg,
-    vocabed_t **rvocabed)
+int vocabed_new(map_t *map, robots_t *robots, prog_module_t *prog,
+    vocabed_cb_t *cb, void *arg, vocabed_t **rvocabed)
 {
 	vocabed_t *vocabed;
 	int rc;
 
-	rc = vocabed_create(map, robots, cb, arg, &vocabed);
+	rc = vocabed_create(map, robots, prog, cb, arg, &vocabed);
 	if (rc != 0) {
 		map_destroy(map);
 		return rc;
@@ -173,23 +246,55 @@ int vocabed_new(map_t *map, robots_t *robots, vocabed_cb_t *cb, void *arg,
  *
  * @param map Map
  * @param robots Robots
+ * @param prog Program module
  * @param f File
  * @param cb Callbacks
  * @param arg Callback arguments
  * @param rvocabed Place to store pointer to new vocabulary editor
  * @return Zero on success or an error code
  */
-int vocabed_load(map_t *map, robots_t *robots, FILE *f, vocabed_cb_t *cb,
-    void *arg, vocabed_t **rvocabed)
+int vocabed_load(map_t *map, robots_t *robots, prog_module_t *prog, FILE *f,
+    vocabed_cb_t *cb, void *arg, vocabed_t **rvocabed)
 {
 	vocabed_t *vocabed = NULL;
+	int nitem;
 	int rc;
+	unsigned state;
+	unsigned have_learn_proc;
 
-	(void) f;
-
-	rc = vocabed_create(map, robots, cb, arg, &vocabed);
+	rc = vocabed_create(map, robots, prog, cb, arg, &vocabed);
 	if (rc != 0) {
 		rc = ENOMEM;
+		goto error;
+	}
+
+	nitem = fscanf(f, "%u\n", &state);
+	if (nitem != 1) {
+		rc = EIO;
+		goto error;
+	}
+
+	nitem = fscanf(f, "%u\n", &have_learn_proc);
+	if (nitem != 1) {
+		rc = EIO;
+		goto error;
+	}
+
+	if (have_learn_proc != 0) {
+		rc = prog_proc_load(vocabed->prog, f, &vocabed->learn_proc);
+		if (rc != 0)
+			goto error;
+	}
+
+	switch (state) {
+	case vst_immed:
+		vocabed_immed(vocabed);
+		break;
+	case vst_learn:
+		vocabed_learn(vocabed);
+		break;
+	default:
+		rc = EIO;
 		goto error;
 	}
 
@@ -217,8 +322,23 @@ error:
  */
 int vocabed_save(vocabed_t *vocabed, FILE *f)
 {
-	(void) vocabed;
-	(void) f;
+	int rc;
+	int rv;
+
+	rv = fprintf(f, "%u\n", (unsigned)vocabed->state);
+	if (rv < 0)
+		return EIO;
+
+	rv = fprintf(f, "%u\n", vocabed->learn_proc != NULL ? 1 : 0);
+	if (rv < 0)
+		return EIO;
+
+	if (vocabed->learn_proc != NULL) {
+		rc = prog_proc_save(vocabed->learn_proc, f);
+		if (rc != 0)
+			return rc;
+	}
+
 	return 0;
 }
 
@@ -265,6 +385,61 @@ void vocabed_event(vocabed_t *vocabed, SDL_Event *e, gfx_t *gfx)
 	}
 }
 
+/** Start learning a new procedure.
+ *
+ * @param vocabed Vocabulary editor
+ */
+static void vocabed_learn(vocabed_t *vocabed)
+{
+	char *ident;
+	int rc;
+
+	printf("Learn!\n");
+
+	rc = prog_module_gen_ident(vocabed->prog, &ident);
+	if (rc != 0)
+		return;
+
+	rc = prog_proc_create(ident, &vocabed->learn_proc);
+	if (rc != 0) {
+		free(ident);
+		return;
+	}
+
+	rc = prog_block_create(&vocabed->learn_proc->body);
+	if (rc != 0) {
+		prog_proc_destroy(vocabed->learn_proc);
+		vocabed->learn_proc = NULL;
+		return;
+	}
+
+	free(ident);
+
+	vocabed->state = vst_learn;
+
+	wordlist_clear(vocabed->verbs);
+	wordlist_set_cb(vocabed->verbs, vocabed_learn_verbs_cb, vocabed);
+
+	(void) vocabed_add_statement_verbs(vocabed);
+	(void) vocabed_add_predefined_verb(vocabed, verb_end);
+}
+
+/** End block when learning a new procedure.
+ *
+ * @param vocabed Vocabulary editor
+ */
+static void vocabed_learn_end(vocabed_t *vocabed)
+{
+	printf("Learn end!\n");
+
+	/* Append new procedure to program */
+	prog_module_append(vocabed->prog, vocabed->learn_proc);
+	vocabed->learn_proc = NULL;
+
+	/* Return to immediate mode */
+	(void) vocabed_immed(vocabed);
+}
+
 /** Vocabulary editor callback.
  *
  * @param arg Vocabulary editor (vocabed_t *)
@@ -279,39 +454,77 @@ static void vocabed_mapview_cb(void *arg, int x, int y)
 	vocabed_repaint_req(vocabed);
 }
 
-/** Vocabulary editor verbs callback.
+/** Vocabulary editor immeadite mode verbs callback.
  *
- * Called when a verb is selected.
+ * Called when a verb is selected in immediate mode.
  *
  * @param arg Vocabulary editor (vocabed_t)
  * @param earg Etry argument
  */
-static void vocabed_verbs_cb(void *arg, void *earg)
+static void vocabed_immed_verbs_cb(void *arg, void *earg)
 {
 	vocabed_t *vocabed = (vocabed_t *)arg;
 	const char *str = (const char *)earg;
 	robot_t *robot;
 
-	(void)vocabed;
-	printf("Entry '%s'\n", str);
+	printf("Immediate mode. Entry '%s'\n", str);
 
 	robot = robots_first(vocabed->robots);
 	while (robot != NULL) {
-		if (str == verb_icons[0])
+		if (str == verb_icon_files[verb_move])
 			robot_move(robot);
-		if (str == verb_icons[1])
+		if (str == verb_icon_files[verb_turn_left])
 			robot_turn_left(robot);
-		if (str == verb_icons[2])
+		if (str == verb_icon_files[verb_put_white])
 			robot_put_white(robot);
-		if (str == verb_icons[3])
+		if (str == verb_icon_files[verb_put_grey])
 			robot_put_grey(robot);
-		if (str == verb_icons[4])
+		if (str == verb_icon_files[verb_put_black])
 			robot_put_black(robot);
-		if (str == verb_icons[5])
+		if (str == verb_icon_files[verb_pick_up])
 			robot_pick_up(robot);
 
 		robot = robots_next(robot);
 	}
+
+	if (str == verb_icon_files[verb_learn])
+		vocabed_learn(vocabed);
+
+	vocabed_repaint_req(vocabed);
+}
+
+static void vocabed_learn_intrinsic(vocabed_t *vocabed, prog_intr_type_t itype)
+{
+	prog_stmt_t *stmt;
+	int rc;
+
+	rc = prog_stmt_intrinsic_create(itype, &stmt);
+	if (rc != 0)
+		return;
+
+	prog_block_append(vocabed->learn_proc->body, stmt);
+}
+
+/** Vocabulary editor learn mode verbs callback.
+ *
+ * Called when a verb is selected in learn mode.
+ *
+ * @param arg Vocabulary editor (vocabed_t)
+ * @param earg Etry argument
+ */
+static void vocabed_learn_verbs_cb(void *arg, void *earg)
+{
+	vocabed_t *vocabed = (vocabed_t *)arg;
+	const char *str = (const char *)earg;
+
+	printf("Learn mode. Entry '%s'\n", str);
+
+	if (str == verb_icon_files[verb_move])
+		vocabed_learn_intrinsic(vocabed, progin_move);
+	if (str == verb_icon_files[verb_turn_left])
+		vocabed_learn_intrinsic(vocabed, progin_turn_left);
+	if (str == verb_icon_files[verb_end])
+		vocabed_learn_end(vocabed);
 
 	vocabed_repaint_req(vocabed);
 }
