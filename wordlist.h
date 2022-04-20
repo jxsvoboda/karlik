@@ -28,13 +28,17 @@
 #include "adt/list.h"
 #include "gfx.h"
 
-/** Wordlist callback.
+/** Wordlist callbacks.
  *
- * Called when a word is selected. The first argument is provided
- * by the caller upon wordlist creation. The second argument is the per-word
- * user argument.
+ * The first argument to the callbacks is provided by the caller upon wordlist
+ * creation. The second argument is the per-word user argument.
  */
-typedef void (*wordlist_cb_t)(void *, void *);
+typedef struct {
+	/** Entry is selected */
+	void (*selected)(void *, void *);
+	/** Entry is being destroyed */
+	void (*destroy)(void *, void *);
+} wordlist_cb_t;
 
 /** Wordlist entry */
 typedef struct {
@@ -57,14 +61,14 @@ typedef struct wordlist {
 	/** Origin Y coordinate */
 	int orig_y;
 	/** Callback */
-	wordlist_cb_t cb;
+	wordlist_cb_t *cb;
 	/** Callback argument */
 	void *arg;
 } wordlist_t;
 
 extern int wordlist_create(wordlist_t **);
 extern void wordlist_set_origin(wordlist_t *, int, int);
-extern void wordlist_set_cb(wordlist_t *, wordlist_cb_t, void *);
+extern void wordlist_set_cb(wordlist_t *, wordlist_cb_t *, void *);
 extern void wordlist_destroy(wordlist_t *);
 extern int wordlist_add(wordlist_t *, gfx_bmp_t *, void *);
 extern void wordlist_clear(wordlist_t *);

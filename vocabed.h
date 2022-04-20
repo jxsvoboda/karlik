@@ -37,7 +37,7 @@ typedef struct {
 	void (*repaint)(void *);
 } vocabed_cb_t;
 
-/** Vocabulary editor predefined verbs */
+/** Vocabulary editor verb types */
 typedef enum {
 	verb_move,
 	verb_turn_left,
@@ -47,7 +47,25 @@ typedef enum {
 	verb_pick_up,
 	verb_learn,
 	verb_end,
-	verb_limit
+
+	/** Above verbs have fixed icons */
+	verb_limit,
+
+	verb_call
+} vocabed_verb_type_t;
+
+/** Call verb */
+typedef struct {
+	/** Called procedure */
+	prog_proc_t *proc;
+} vocabed_verb_call_t;
+
+/** Vocabulary editor verb */
+typedef struct {
+	vocabed_verb_type_t vtype;
+	union {
+		vocabed_verb_call_t vcall;
+	} v;
 } vocabed_verb_t;
 
 /** Vocabulary editor state */

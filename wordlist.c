@@ -75,7 +75,7 @@ void wordlist_set_origin(wordlist_t *wordlist, int x, int y)
  * @param cb Callback function
  * @param arg Callback argument
  */
-void wordlist_set_cb(wordlist_t *wordlist, wordlist_cb_t cb, void *arg)
+void wordlist_set_cb(wordlist_t *wordlist, wordlist_cb_t *cb, void *arg)
 {
 	wordlist->cb = cb;
 	wordlist->arg = arg;
@@ -126,6 +126,8 @@ void wordlist_clear(wordlist_t *wordlist)
 	entry = wordlist_first(wordlist);
 	while (entry != NULL) {
 		list_remove(&entry->lwlist);
+		if (wordlist->cb != NULL && wordlist->cb->destroy != NULL)
+			wordlist->cb->destroy(wordlist->arg, entry->arg);
 		free(entry);
 
 		entry = wordlist_first(wordlist);
@@ -183,8 +185,11 @@ bool wordlist_event(wordlist_t *wordlist, SDL_Event *event)
 			if (mbe->x >= x && mbe->y >= y &&
 			    mbe->x < x + w && mbe->y < y + h) {
 				printf("Select entry %p\n", entry);
-				if (wordlist->cb != NULL)
-					wordlist->cb(wordlist->arg, entry->arg);
+				if (wordlist->cb != NULL &&
+				    wordlist->cb->selected != NULL) {
+					wordlist->cb->selected(wordlist->arg,
+					    entry->arg);
+				}
 				return true;
 			}
 		}

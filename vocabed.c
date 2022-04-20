@@ -56,7 +56,7 @@ static const char *verb_icon_files[] = {
 };
 
 /** Verbs corresponding to intrinsic statements */
-static const vocabed_verb_t intrinsic_verbs[] = {
+static const vocabed_verb_type_t intrinsic_verbs[] = {
 	verb_move,
 	verb_turn_left,
 	verb_put_white,
@@ -67,11 +67,23 @@ static const vocabed_verb_t intrinsic_verbs[] = {
 };
 
 static int vocabed_add_statement_verbs(vocabed_t *);
-static int vocabed_add_predefined_verb(vocabed_t *, vocabed_verb_t);
+static int vocabed_add_predefined_verb(vocabed_t *, vocabed_verb_type_t);
 static void vocabed_map_setup(vocabed_t *);
 static void vocabed_learn(vocabed_t *);
-static void vocabed_immed_verbs_cb(void *, void *);
-static void vocabed_learn_verbs_cb(void *, void *);
+
+static void vocabed_immed_verb_selected(void *, void *);
+static void vocabed_learn_verb_selected(void *, void *);
+static void vocabed_verb_destroy(void *, void *);
+
+static wordlist_cb_t vocabed_immed_verbs_cb = {
+	.selected = vocabed_immed_verb_selected,
+	.destroy = vocabed_verb_destroy
+};
+
+static wordlist_cb_t vocabed_learn_verbs_cb = {
+	.selected = vocabed_learn_verb_selected,
+	.destroy = vocabed_verb_destroy
+};
 
 /** Display vocabulary editor.
  *
@@ -104,7 +116,7 @@ static int vocabed_immed(vocabed_t *vocabed)
 	vocabed->state = vst_immed;
 
 	wordlist_clear(vocabed->verbs);
-	wordlist_set_cb(vocabed->verbs, vocabed_immed_verbs_cb, vocabed);
+	wordlist_set_cb(vocabed->verbs, &vocabed_immed_verbs_cb, vocabed);
 
 	rc = vocabed_add_statement_verbs(vocabed);
 	if (rc != 0)
@@ -117,16 +129,43 @@ static int vocabed_immed(vocabed_t *vocabed)
 	return 0;
 }
 
-/** Add predefined verb to the verb list.
+/** Add verb with predefined icon to the verb list.
  *
  * @param vocabed Vocabulary editor
  * @param verb Predefined verb
  * @return EOK on success or an error code
  */
-static int vocabed_add_predefined_verb(vocabed_t *vocabed, vocabed_verb_t verb)
+static int vocabed_add_predefined_verb(vocabed_t *vocabed,
+    vocabed_verb_type_t vtype)
 {
-	return wordlist_add(vocabed->verbs, vocabed->verb_icons[verb],
-	    (void *) verb_icon_files[verb]);
+	vocabed_verb_t *verb;
+
+	verb = calloc(1, sizeof(vocabed_verb_t));
+	if (verb == NULL)
+		return ENOMEM;
+
+	verb->vtype = vtype;
+	return wordlist_add(vocabed->verbs, vocabed->verb_icons[vtype], verb);
+}
+
+/** Add call verb to the verb list.
+ *
+ * @param vocabed Vocabulary editor
+ * @param proc Called procedure
+ * @return EOK on success or an error code
+ */
+static int vocabed_add_call_verb(vocabed_t *vocabed, prog_proc_t *proc)
+{
+	vocabed_verb_t *verb;
+
+	verb = calloc(1, sizeof(vocabed_verb_t));
+	if (verb == NULL)
+		return ENOMEM;
+
+	verb->vtype = verb_call;
+	verb->v.vcall.proc = proc;
+	return wordlist_add(vocabed->verbs, vocabed->verb_icons[verb_move],
+	    verb);
 }
 
 /** Add statement verbs to the verb list.
@@ -135,6 +174,7 @@ static int vocabed_add_predefined_verb(vocabed_t *vocabed, vocabed_verb_t verb)
  */
 static int vocabed_add_statement_verbs(vocabed_t *vocabed)
 {
+	prog_proc_t *proc;
 	int rc;
 	unsigned i;
 
@@ -146,6 +186,16 @@ static int vocabed_add_statement_verbs(vocabed_t *vocabed)
 			return rc;
 
 		++i;
+	}
+
+	/* Add call verb for each defined procedure */
+	proc = prog_module_first(vocabed->prog);
+	while (proc != NULL) {
+		rc = vocabed_add_call_verb(vocabed, proc);
+		if (rc != 0)
+			return rc;
+
+		proc = prog_module_next(proc);
 	}
 
 	return 0;
@@ -182,7 +232,7 @@ static int vocabed_create(map_t *map, robots_t *robots, prog_module_t *prog,
 		goto error;
 
 	wordlist_set_origin(vocabed->verbs, 0, 214);
-	wordlist_set_cb(vocabed->verbs, vocabed_immed_verbs_cb, vocabed);
+	wordlist_set_cb(vocabed->verbs, &vocabed_immed_verbs_cb, vocabed);
 
 	cp = verb_icon_files;
 	i = 0;
@@ -196,15 +246,15 @@ static int vocabed_create(map_t *map, robots_t *robots, prog_module_t *prog,
 		++i;
 	}
 
-	rc = vocabed_immed(vocabed);
-	if (rc != 0)
-		goto error;
-
 	vocabed->cb = cb;
 	vocabed->arg = arg;
 
 	vocabed->robots = robots;
 	vocabed->prog = prog;
+
+	rc = vocabed_immed(vocabed);
+	if (rc != 0)
+		goto error;
 
 	*rvocabed = vocabed;
 	return 0;
@@ -418,7 +468,7 @@ static void vocabed_learn(vocabed_t *vocabed)
 	vocabed->state = vst_learn;
 
 	wordlist_clear(vocabed->verbs);
-	wordlist_set_cb(vocabed->verbs, vocabed_learn_verbs_cb, vocabed);
+	wordlist_set_cb(vocabed->verbs, &vocabed_learn_verbs_cb, vocabed);
 
 	(void) vocabed_add_statement_verbs(vocabed);
 	(void) vocabed_add_predefined_verb(vocabed, verb_end);
@@ -461,36 +511,55 @@ static void vocabed_mapview_cb(void *arg, int x, int y)
  * @param arg Vocabulary editor (vocabed_t)
  * @param earg Etry argument
  */
-static void vocabed_immed_verbs_cb(void *arg, void *earg)
+static void vocabed_immed_verb_selected(void *arg, void *earg)
 {
 	vocabed_t *vocabed = (vocabed_t *)arg;
-	const char *str = (const char *)earg;
+	vocabed_verb_t *verb = (vocabed_verb_t *)earg;
 	robot_t *robot;
 
-	printf("Immediate mode. Entry '%s'\n", str);
+	printf("Immediate mode. Verb type '%u'\n", verb->vtype);
 
 	robot = robots_first(vocabed->robots);
 	while (robot != NULL) {
-		if (str == verb_icon_files[verb_move])
+		switch (verb->vtype) {
+		case verb_move:
 			robot_move(robot);
-		if (str == verb_icon_files[verb_turn_left])
+			break;
+		case verb_turn_left:
 			robot_turn_left(robot);
-		if (str == verb_icon_files[verb_put_white])
+			break;
+		case verb_put_white:
 			robot_put_white(robot);
-		if (str == verb_icon_files[verb_put_grey])
+			break;
+		case verb_put_grey:
 			robot_put_grey(robot);
-		if (str == verb_icon_files[verb_put_black])
+			break;
+		case verb_put_black:
 			robot_put_black(robot);
-		if (str == verb_icon_files[verb_pick_up])
+			break;
+		case verb_pick_up:
 			robot_pick_up(robot);
+			break;
+		default:
+			break;
+		}
 
 		robot = robots_next(robot);
 	}
 
-	if (str == verb_icon_files[verb_learn])
+	if (verb->vtype == verb_learn)
 		vocabed_learn(vocabed);
 
 	vocabed_repaint_req(vocabed);
+}
+
+static void vocabed_verb_destroy(void *arg, void *earg)
+{
+	vocabed_t *vocabed = (vocabed_t *)arg;
+	vocabed_verb_t *verb = (vocabed_verb_t *)earg;
+
+	(void)vocabed;
+	free(verb);
 }
 
 static void vocabed_learn_intrinsic(vocabed_t *vocabed, prog_intr_type_t itype)
@@ -505,14 +574,14 @@ static void vocabed_learn_intrinsic(vocabed_t *vocabed, prog_intr_type_t itype)
 	prog_block_append(vocabed->learn_proc->body, stmt);
 }
 
-/** Vocabulary editor learn mode verbs callback.
+/** Vocabulary editor learn mode verb selected.
  *
  * Called when a verb is selected in learn mode.
  *
  * @param arg Vocabulary editor (vocabed_t)
  * @param earg Etry argument
  */
-static void vocabed_learn_verbs_cb(void *arg, void *earg)
+static void vocabed_learn_verb_selected(void *arg, void *earg)
 {
 	vocabed_t *vocabed = (vocabed_t *)arg;
 	const char *str = (const char *)earg;
