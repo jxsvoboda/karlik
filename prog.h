@@ -48,6 +48,11 @@ typedef enum {
 	progin_pick_up = 5
 } prog_intr_type_t;
 
+enum {
+	/** Number of intrinsic types */
+	progin_limit = 6
+};
+
 /** Program statement type */
 typedef enum {
 	/** Intrinsic command */

@@ -29,6 +29,7 @@
 #include "gfx.h"
 #include "mapview.h"
 #include "prog.h"
+#include "progview.h"
 #include "robots.h"
 #include "toolbar.h"
 #include "wordlist.h"
@@ -80,6 +81,8 @@ typedef enum {
 typedef struct {
 	/** Map view */
 	mapview_t *mapview;
+	/** Program view */
+	progview_t *progview;
 	/** Verb view */
 	wordlist_t *verbs;
 	/** Robots */

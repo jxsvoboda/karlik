@@ -36,6 +36,7 @@ sources = \
 	mapedit.c \
 	mapview.c \
 	prog.c \
+	progview.c \
 	robot.c \
 	robots.c \
 	toolbar.c \

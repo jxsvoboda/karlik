@@ -31,6 +31,7 @@
 #include <SDL.h>
 #include "gfx.h"
 #include "mapview.h"
+#include "progview.h"
 #include "robots.h"
 #include "vocabed.h"
 
@@ -93,6 +94,7 @@ static wordlist_cb_t vocabed_learn_verbs_cb = {
 void vocabed_display(vocabed_t *vocabed, gfx_t *gfx)
 {
 	mapview_draw(vocabed->mapview, gfx);
+	progview_draw(vocabed->progview, gfx);
 	wordlist_draw(vocabed->verbs, gfx);
 }
 
@@ -227,6 +229,16 @@ static int vocabed_create(map_t *map, robots_t *robots, prog_module_t *prog,
 	if (rc != 0)
 		goto error;
 
+	rc = progview_create(&vocabed->progview);
+	if (rc != 0)
+		goto error;
+
+	progview_set_orig(vocabed->progview, 170, 36);
+	vocabed->progview->icon_w = 16;
+	vocabed->progview->icon_h = 16;
+	vocabed->progview->margin_x = 2;
+	vocabed->progview->margin_y = 2;
+
 	rc = wordlist_create(&vocabed->verbs);
 	if (rc != 0)
 		goto error;
@@ -330,12 +342,6 @@ int vocabed_load(map_t *map, robots_t *robots, prog_module_t *prog, FILE *f,
 		goto error;
 	}
 
-	if (have_learn_proc != 0) {
-		rc = prog_proc_load(vocabed->prog, f, &vocabed->learn_proc);
-		if (rc != 0)
-			goto error;
-	}
-
 	switch (state) {
 	case vst_immed:
 		vocabed_immed(vocabed);
@@ -346,6 +352,16 @@ int vocabed_load(map_t *map, robots_t *robots, prog_module_t *prog, FILE *f,
 	default:
 		rc = EIO;
 		goto error;
+	}
+
+	if (have_learn_proc != 0) {
+		printf("Have learn proc - yes!\n");
+		rc = prog_proc_load(vocabed->prog, f, &vocabed->learn_proc);
+		if (rc != 0)
+			goto error;
+
+		printf("Statements: %lu\n", list_count(&vocabed->learn_proc->body->stmts));
+		progview_set_proc(vocabed->progview, vocabed->learn_proc);
 	}
 
 	map = NULL;
@@ -466,6 +482,7 @@ static void vocabed_learn(vocabed_t *vocabed)
 	free(ident);
 
 	vocabed->state = vst_learn;
+	progview_set_proc(vocabed->progview, vocabed->learn_proc);
 
 	wordlist_clear(vocabed->verbs);
 	wordlist_set_cb(vocabed->verbs, &vocabed_learn_verbs_cb, vocabed);
@@ -485,6 +502,7 @@ static void vocabed_learn_end(vocabed_t *vocabed)
 	/* Append new procedure to program */
 	prog_module_append(vocabed->prog, vocabed->learn_proc);
 	vocabed->learn_proc = NULL;
+	progview_set_proc(vocabed->progview, NULL);
 
 	/* Return to immediate mode */
 	(void) vocabed_immed(vocabed);
@@ -639,6 +657,8 @@ void vocabed_destroy(vocabed_t *vocabed)
 {
 	if (vocabed->mapview != NULL)
 		mapview_destroy(vocabed->mapview);
+	if (vocabed->progview != NULL)
+		progview_destroy(vocabed->progview);
 	if (vocabed->verbs != NULL)
 		wordlist_destroy(vocabed->verbs);
 	free(vocabed);
