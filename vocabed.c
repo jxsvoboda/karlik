@@ -81,12 +81,12 @@ static void vocabed_map_setup(vocabed_t *);
 static void vocabed_learn(vocabed_t *);
 static void vocabed_toolbar_cb(void *, int);
 
-static void vocabed_immed_verb_selected(void *, void *);
+static void vocabed_work_verb_selected(void *, void *);
 static void vocabed_learn_verb_selected(void *, void *);
 static void vocabed_verb_destroy(void *, void *);
 
-static wordlist_cb_t vocabed_immed_verbs_cb = {
-	.selected = vocabed_immed_verb_selected,
+static wordlist_cb_t vocabed_work_verbs_cb = {
+	.selected = vocabed_work_verb_selected,
 	.destroy = vocabed_verb_destroy
 };
 
@@ -117,18 +117,18 @@ static void vocabed_repaint_req(vocabed_t *vocabed)
 	vocabed->cb->repaint(vocabed->arg);
 }
 
-/** Set up vocabulary editor immediate state.
+/** Set up vocabulary editor work state.
  *
  * @param vocabed Vocabulary editor
  */
-static int vocabed_immed(vocabed_t *vocabed)
+static int vocabed_work(vocabed_t *vocabed)
 {
 	int rc;
 
-	vocabed->state = vst_immed;
+	vocabed->state = vst_work;
 
 	wordlist_clear(vocabed->verbs);
-	wordlist_set_cb(vocabed->verbs, &vocabed_immed_verbs_cb, vocabed);
+	wordlist_set_cb(vocabed->verbs, &vocabed_work_verbs_cb, vocabed);
 
 	rc = vocabed_add_statement_verbs(vocabed);
 	if (rc != 0)
@@ -259,7 +259,7 @@ static int vocabed_create(map_t *map, robots_t *robots, prog_module_t *prog,
 		goto error;
 
 	wordlist_set_origin(vocabed->verbs, 0, 214);
-	wordlist_set_cb(vocabed->verbs, &vocabed_immed_verbs_cb, vocabed);
+	wordlist_set_cb(vocabed->verbs, &vocabed_work_verbs_cb, vocabed);
 
 	cp = verb_icon_files;
 	i = 0;
@@ -279,7 +279,7 @@ static int vocabed_create(map_t *map, robots_t *robots, prog_module_t *prog,
 	vocabed->robots = robots;
 	vocabed->prog = prog;
 
-	rc = vocabed_immed(vocabed);
+	rc = vocabed_work(vocabed);
 	if (rc != 0)
 		goto error;
 
@@ -358,8 +358,8 @@ int vocabed_load(map_t *map, robots_t *robots, prog_module_t *prog, FILE *f,
 	}
 
 	switch (state) {
-	case vst_immed:
-		vocabed_immed(vocabed);
+	case vst_work:
+		vocabed_work(vocabed);
 		break;
 	case vst_learn:
 		vocabed_learn(vocabed);
@@ -526,8 +526,8 @@ static void vocabed_learn_end(vocabed_t *vocabed)
 	vocabed->learn_proc = NULL;
 	progview_set_proc(vocabed->progview, NULL);
 
-	/* Return to immediate mode */
-	(void) vocabed_immed(vocabed);
+	/* Return to work mode */
+	(void) vocabed_work(vocabed);
 	toolbar_select(vocabed->tb, vocabed->state);
 }
 
@@ -547,18 +547,18 @@ static void vocabed_mapview_cb(void *arg, int x, int y)
 
 /** Vocabulary editor immeadite mode verbs callback.
  *
- * Called when a verb is selected in immediate mode.
+ * Called when a verb is selected in work mode.
  *
  * @param arg Vocabulary editor (vocabed_t)
  * @param earg Etry argument
  */
-static void vocabed_immed_verb_selected(void *arg, void *earg)
+static void vocabed_work_verb_selected(void *arg, void *earg)
 {
 	vocabed_t *vocabed = (vocabed_t *)arg;
 	vocabed_verb_t *verb = (vocabed_verb_t *)earg;
 	robot_t *robot;
 
-	printf("Immediate mode. Verb type '%u'\n", verb->vtype);
+	printf("Work mode. Verb type '%u'\n", verb->vtype);
 
 	robot = robots_first(vocabed->robots);
 	while (robot != NULL) {
@@ -681,7 +681,7 @@ static void vocabed_toolbar_cb(void *arg, int idx)
 
 	switch (idx) {
 	case 0:
-		vocabed_immed(vocabed);
+		vocabed_work(vocabed);
 		break;
 	case 1:
 		vocabed_learn(vocabed);

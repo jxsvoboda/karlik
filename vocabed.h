@@ -70,8 +70,8 @@ typedef struct {
 
 /** Vocabulary editor state */
 typedef enum {
-	/** Immediate command state */
-	vst_immed,
+	/** Work state */
+	vst_work,
 	/** Learn new procedure state */
 	vst_learn,
 	/** Examine command state */
