@@ -46,7 +46,6 @@ typedef enum {
 	verb_put_grey,
 	verb_put_black,
 	verb_pick_up,
-	verb_learn,
 	verb_end,
 
 	/** Above verbs have fixed icons */
@@ -74,7 +73,9 @@ typedef enum {
 	/** Immediate command state */
 	vst_immed,
 	/** Learn new procedure state */
-	vst_learn
+	vst_learn,
+	/** Examine command state */
+	vst_examine
 } vocabed_state_t;
 
 /** Map editor */
@@ -93,6 +94,8 @@ typedef struct {
 	prog_proc_t *learn_proc;
 	/** State */
 	vocabed_state_t state;
+	/** Vocabulary editor toolbar */
+	toolbar_t *tb;
 	/** Callbacks */
 	vocabed_cb_t *cb;
 	/** Verb icons */

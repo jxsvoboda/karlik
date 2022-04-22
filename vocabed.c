@@ -34,6 +34,7 @@
 #include "progview.h"
 #include "robots.h"
 #include "vocabed.h"
+#include "toolbar.h"
 
 enum {
 	tile_xs = 32,
@@ -51,9 +52,16 @@ static const char *verb_icon_files[] = {
 	[verb_put_grey] = "img/verb/putgrey.bmp",
 	[verb_put_black] = "img/verb/putblack.bmp",
 	[verb_pick_up] = "img/verb/pickup.bmp",
-	[verb_learn] = "img/verb/learn.bmp",
 	[verb_end] = "img/verb/end.bmp",
 	[verb_limit] = NULL
+};
+
+/** Toolbar icon files */
+static const char *vocabed_tb_files[] = {
+	"img/vocabed/tool/work.bmp",
+	"img/vocabed/tool/learn.bmp",
+	"img/vocabed/tool/examine.bmp",
+	NULL
 };
 
 /** Verbs corresponding to intrinsic statements */
@@ -71,6 +79,7 @@ static int vocabed_add_statement_verbs(vocabed_t *);
 static int vocabed_add_predefined_verb(vocabed_t *, vocabed_verb_type_t);
 static void vocabed_map_setup(vocabed_t *);
 static void vocabed_learn(vocabed_t *);
+static void vocabed_toolbar_cb(void *, int);
 
 static void vocabed_immed_verb_selected(void *, void *);
 static void vocabed_learn_verb_selected(void *, void *);
@@ -94,6 +103,7 @@ static wordlist_cb_t vocabed_learn_verbs_cb = {
 void vocabed_display(vocabed_t *vocabed, gfx_t *gfx)
 {
 	mapview_draw(vocabed->mapview, gfx);
+	toolbar_draw(vocabed->tb, gfx);
 	progview_draw(vocabed->progview, gfx);
 	wordlist_draw(vocabed->verbs, gfx);
 }
@@ -124,9 +134,7 @@ static int vocabed_immed(vocabed_t *vocabed)
 	if (rc != 0)
 		return rc;
 
-	rc = vocabed_add_predefined_verb(vocabed, verb_learn);
-	if (rc != 0)
-		return rc;
+	progview_set_proc(vocabed->progview, NULL);
 
 	return 0;
 }
@@ -228,6 +236,13 @@ static int vocabed_create(map_t *map, robots_t *robots, prog_module_t *prog,
 	rc = mapview_create(map, robots, &vocabed->mapview);
 	if (rc != 0)
 		goto error;
+
+	rc = toolbar_create(vocabed_tb_files, &vocabed->tb);
+	if (rc != 0)
+		goto error;
+
+	toolbar_set_origin(vocabed->tb, 4, 26);
+	toolbar_set_cb(vocabed->tb, vocabed_toolbar_cb, vocabed);
 
 	rc = progview_create(&vocabed->progview);
 	if (rc != 0)
@@ -354,6 +369,8 @@ int vocabed_load(map_t *map, robots_t *robots, prog_module_t *prog, FILE *f,
 		goto error;
 	}
 
+	toolbar_select(vocabed->tb, vocabed->state);
+
 	if (have_learn_proc != 0) {
 		printf("Have learn proc - yes!\n");
 		rc = prog_proc_load(vocabed->prog, f, &vocabed->learn_proc);
@@ -436,6 +453,9 @@ void vocabed_event(vocabed_t *vocabed, SDL_Event *e, gfx_t *gfx)
 
 	(void) gfx;
 
+	if (toolbar_event(vocabed->tb, e))
+		return;
+
 	(void) mapview_event(vocabed->mapview, e);
 	(void) wordlist_event(vocabed->verbs, e);
 
@@ -466,17 +486,19 @@ static void vocabed_learn(vocabed_t *vocabed)
 	if (rc != 0)
 		return;
 
-	rc = prog_proc_create(ident, &vocabed->learn_proc);
-	if (rc != 0) {
-		free(ident);
-		return;
-	}
+	if (vocabed->learn_proc == NULL) {
+		rc = prog_proc_create(ident, &vocabed->learn_proc);
+		if (rc != 0) {
+			free(ident);
+			return;
+		}
 
-	rc = prog_block_create(&vocabed->learn_proc->body);
-	if (rc != 0) {
-		prog_proc_destroy(vocabed->learn_proc);
-		vocabed->learn_proc = NULL;
-		return;
+		rc = prog_block_create(&vocabed->learn_proc->body);
+		if (rc != 0) {
+			prog_proc_destroy(vocabed->learn_proc);
+			vocabed->learn_proc = NULL;
+			return;
+		}
 	}
 
 	free(ident);
@@ -506,6 +528,7 @@ static void vocabed_learn_end(vocabed_t *vocabed)
 
 	/* Return to immediate mode */
 	(void) vocabed_immed(vocabed);
+	toolbar_select(vocabed->tb, vocabed->state);
 }
 
 /** Vocabulary editor callback.
@@ -568,9 +591,6 @@ static void vocabed_immed_verb_selected(void *arg, void *earg)
 
 		robot = robots_next(robot);
 	}
-
-	if (verb->vtype == verb_learn)
-		vocabed_learn(vocabed);
 
 	vocabed_repaint_req(vocabed);
 }
@@ -647,6 +667,30 @@ static void vocabed_map_setup(vocabed_t *vocabed)
 {
 	mapview_set_orig(vocabed->mapview, 0, 56);
 	mapview_set_cb(vocabed->mapview, vocabed_mapview_cb, vocabed);
+}
+
+/** Vocabulary editor toolbar callback.
+ *
+ * @param arg Vocabulary editor (vocabed_t *)
+ * @param idx Index of the selected entry
+ */
+static void vocabed_toolbar_cb(void *arg, int idx)
+{
+	vocabed_t *vocabed = (vocabed_t *)arg;
+	printf("vocabed_toolbar_cb(%d)\n", idx);
+
+	switch (idx) {
+	case 0:
+		vocabed_immed(vocabed);
+		break;
+	case 1:
+		vocabed_learn(vocabed);
+		break;
+	case 2:
+		break;
+	}
+
+	vocabed_repaint_req(vocabed);
 }
 
 /** Destroy vocabulary editor.
