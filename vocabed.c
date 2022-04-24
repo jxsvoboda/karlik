@@ -76,13 +76,16 @@ static const vocabed_verb_type_t intrinsic_verbs[] = {
 };
 
 static int vocabed_add_statement_verbs(vocabed_t *);
+static int vocabed_add_proc_verbs(vocabed_t *);
 static int vocabed_add_predefined_verb(vocabed_t *, vocabed_verb_type_t);
 static void vocabed_map_setup(vocabed_t *);
 static void vocabed_learn(vocabed_t *);
+static void vocabed_examine(vocabed_t *);
 static void vocabed_toolbar_cb(void *, int);
 
 static void vocabed_work_verb_selected(void *, void *);
 static void vocabed_learn_verb_selected(void *, void *);
+static void vocabed_examine_verb_selected(void *, void *);
 static void vocabed_verb_destroy(void *, void *);
 
 static wordlist_cb_t vocabed_work_verbs_cb = {
@@ -92,6 +95,11 @@ static wordlist_cb_t vocabed_work_verbs_cb = {
 
 static wordlist_cb_t vocabed_learn_verbs_cb = {
 	.selected = vocabed_learn_verb_selected,
+	.destroy = vocabed_verb_destroy
+};
+
+static wordlist_cb_t vocabed_examine_verbs_cb = {
+	.selected = vocabed_examine_verb_selected,
 	.destroy = vocabed_verb_destroy
 };
 
@@ -184,7 +192,6 @@ static int vocabed_add_call_verb(vocabed_t *vocabed, prog_proc_t *proc)
  */
 static int vocabed_add_statement_verbs(vocabed_t *vocabed)
 {
-	prog_proc_t *proc;
 	int rc;
 	unsigned i;
 
@@ -197,6 +204,18 @@ static int vocabed_add_statement_verbs(vocabed_t *vocabed)
 
 		++i;
 	}
+
+	return vocabed_add_proc_verbs(vocabed);
+}
+
+/** Add procedure call verbs to the verb list.
+ *
+ * @param vocabed Vocabulary editor
+ */
+static int vocabed_add_proc_verbs(vocabed_t *vocabed)
+{
+	prog_proc_t *proc;
+	int rc;
 
 	/* Add call verb for each defined procedure */
 	proc = prog_module_first(vocabed->prog);
@@ -334,10 +353,13 @@ int vocabed_load(map_t *map, robots_t *robots, prog_module_t *prog, FILE *f,
     vocabed_cb_t *cb, void *arg, vocabed_t **rvocabed)
 {
 	vocabed_t *vocabed = NULL;
+	char ident[prog_proc_id_len + 1];
 	int nitem;
 	int rc;
 	unsigned state;
 	unsigned have_learn_proc;
+	unsigned have_examine_proc;
+	prog_proc_t *proc;
 
 	rc = vocabed_create(map, robots, prog, cb, arg, &vocabed);
 	if (rc != 0) {
@@ -364,6 +386,9 @@ int vocabed_load(map_t *map, robots_t *robots, prog_module_t *prog, FILE *f,
 	case vst_learn:
 		vocabed_learn(vocabed);
 		break;
+	case vst_examine:
+		vocabed_examine(vocabed);
+		break;
 	default:
 		rc = EIO;
 		goto error;
@@ -379,6 +404,28 @@ int vocabed_load(map_t *map, robots_t *robots, prog_module_t *prog, FILE *f,
 
 		printf("Statements: %lu\n", list_count(&vocabed->learn_proc->body->stmts));
 		progview_set_proc(vocabed->progview, vocabed->learn_proc);
+	}
+
+	if (vocabed->state == vst_examine) {
+		nitem = fscanf(f, "%u\n", &have_examine_proc);
+		if (nitem != 1) {
+			rc = EIO;
+			goto error;
+		}
+
+		if (have_examine_proc) {
+			rc = prog_proc_load_ident(f, ident);
+			if (rc != 0)
+				goto error;
+
+			proc = prog_module_proc_by_ident(vocabed->prog, ident);
+			if (proc == NULL) {
+				rc = EIO;
+				goto error;
+			}
+
+			progview_set_proc(vocabed->progview, proc);
+		}
 	}
 
 	map = NULL;
@@ -405,6 +452,7 @@ error:
  */
 int vocabed_save(vocabed_t *vocabed, FILE *f)
 {
+	prog_proc_t *vproc;
 	int rc;
 	int rv;
 
@@ -420,6 +468,20 @@ int vocabed_save(vocabed_t *vocabed, FILE *f)
 		rc = prog_proc_save(vocabed->learn_proc, f);
 		if (rc != 0)
 			return rc;
+	}
+
+	if (vocabed->state == vst_examine) {
+		vproc = progview_get_proc(vocabed->progview);
+
+		rv = fprintf(f, "%u\n", vproc != NULL ? 1 : 0);
+		if (rv < 0)
+			return EIO;
+
+		if (vproc != NULL) {
+			rc = prog_proc_save_ident(vproc->ident, f);
+			if (rc != 0)
+				return rc;
+		}
 	}
 
 	return 0;
@@ -511,6 +573,23 @@ static void vocabed_learn(vocabed_t *vocabed)
 
 	(void) vocabed_add_statement_verbs(vocabed);
 	(void) vocabed_add_predefined_verb(vocabed, verb_end);
+}
+
+/** Examine procedures.
+ *
+ * @param vocabed Vocabulary editor
+ */
+static void vocabed_examine(vocabed_t *vocabed)
+{
+	printf("Examine!\n");
+
+	vocabed->state = vst_examine;
+	progview_set_proc(vocabed->progview, NULL);
+
+	wordlist_clear(vocabed->verbs);
+	wordlist_set_cb(vocabed->verbs, &vocabed_examine_verbs_cb, vocabed);
+
+	(void) vocabed_add_proc_verbs(vocabed);
 }
 
 /** End block when learning a new procedure.
@@ -659,6 +738,25 @@ static void vocabed_learn_verb_selected(void *arg, void *earg)
 	vocabed_repaint_req(vocabed);
 }
 
+/** Vocabulary editor examine mode verb selected.
+ *
+ * Called when a verb is selected in examine mode.
+ *
+ * @param arg Vocabulary editor (vocabed_t)
+ * @param earg Etry argument
+ */
+static void vocabed_examine_verb_selected(void *arg, void *earg)
+{
+	vocabed_t *vocabed = (vocabed_t *)arg;
+	vocabed_verb_t *verb = (vocabed_verb_t *)earg;
+
+	printf("Examine procedure.\n");
+	assert(verb->vtype == verb_call);
+
+	progview_set_proc(vocabed->progview, verb->v.vcall.proc);
+	vocabed_repaint_req(vocabed);
+}
+
 /** Set up vocabulary editor's mapview for use.
  *
  * @param vocabed Vocabulary editor
@@ -687,6 +785,7 @@ static void vocabed_toolbar_cb(void *arg, int idx)
 		vocabed_learn(vocabed);
 		break;
 	case 2:
+		vocabed_examine(vocabed);
 		break;
 	}
 

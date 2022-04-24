@@ -122,6 +122,16 @@ void progview_set_proc(progview_t *progview, prog_proc_t *proc)
 	progview->proc = proc;
 }
 
+/** Get the displayed procedure.
+ *
+ * @param progview Program view
+ * @retur Displayed procedure or @c NULL
+ */
+prog_proc_t *progview_get_proc(progview_t *progview)
+{
+	return progview->proc;
+}
+
 /** Draw program view.
  *
  * @param progview Program view

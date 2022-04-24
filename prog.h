@@ -193,6 +193,8 @@ extern int prog_proc_create(const char *, prog_proc_t **);
 extern void prog_proc_destroy(prog_proc_t *);
 extern int prog_proc_load(prog_module_t *, FILE *, prog_proc_t **);
 extern int prog_proc_save(prog_proc_t *, FILE *);
+extern int prog_proc_load_ident(FILE *, char *);
+extern int prog_proc_save_ident(const char *, FILE *);
 extern int prog_block_create(prog_block_t **);
 extern void prog_block_destroy(prog_block_t *);
 extern void prog_block_append(prog_block_t *, prog_stmt_t *);

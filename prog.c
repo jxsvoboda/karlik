@@ -308,20 +308,16 @@ void prog_proc_destroy(prog_proc_t *proc)
 	free(proc);
 }
 
-/** Load procedure from file.
+/** Load procedure identifier from file.
  *
- * @param mod Containing module
  * @param f File
- * @param rproc Place to store pointer to new procedure
+ * @param ident Array of prog_proc_id_len + 1 characters to hold identifier
  * @return Zero on success or an error code
  */
-int prog_proc_load(prog_module_t *mod, FILE *f, prog_proc_t **rproc)
+int prog_proc_load_ident(FILE *f, char *ident)
 {
 	unsigned i;
-	prog_proc_t *proc;
-	char ident[prog_proc_id_len + 1];
 	int c;
-	int rc;
 
 	for (i = 0; i < prog_proc_id_len; i++) {
 		c = fgetc(f);
@@ -336,6 +332,43 @@ int prog_proc_load(prog_module_t *mod, FILE *f, prog_proc_t **rproc)
 	c = fgetc(f);
 	if (c != '\n')
 		return EIO;
+
+	return 0;
+}
+
+/** Save procedure identifier to file.
+ *
+ * @param ident Identifier
+ * @param f File
+ * @return Zero on success or an error code
+ */
+int prog_proc_save_ident(const char *ident, FILE *f)
+{
+	int rv;
+
+	rv = fprintf(f, "%s\n", ident);
+	if (rv < 0)
+		return EIO;
+
+	return 0;
+}
+
+/** Load procedure from file.
+ *
+ * @param mod Containing module
+ * @param f File
+ * @param rproc Place to store pointer to new procedure
+ * @return Zero on success or an error code
+ */
+int prog_proc_load(prog_module_t *mod, FILE *f, prog_proc_t **rproc)
+{
+	prog_proc_t *proc;
+	char ident[prog_proc_id_len + 1];
+	int rc;
+
+	rc = prog_proc_load_ident(f, ident);
+	if (rc != 0)
+		return rc;
 
 	rc = prog_proc_create(ident, &proc);
 	if (rc != 0)
@@ -361,11 +394,10 @@ error:
 int prog_proc_save(prog_proc_t *proc, FILE *f)
 {
 	int rc;
-	int rv;
 
-	rv = fprintf(f, "%s\n", proc->ident);
-	if (rv < 0)
-		return EIO;
+	rc = prog_proc_save_ident(proc->ident, f);
+	if (rc != 0)
+		return rc;
 
 	rc = prog_block_save(proc->body, f);
 	if (rc != 0)
@@ -759,22 +791,11 @@ static int prog_stmt_call_load(prog_module_t *mod, FILE *f, prog_stmt_t **rstmt)
 {
 	char ident[prog_proc_id_len + 1];
 	prog_proc_t *proc;
-	int c;
-	unsigned i;
+	int rc;
 
-	for (i = 0; i < prog_proc_id_len; i++) {
-		c = fgetc(f);
-		if (c < 0)
-			return EIO;
-
-		ident[i] = c;
-	}
-
-	ident[i] = '\0';
-
-	c = fgetc(f);
-	if (c != '\n')
-		return EIO;
+	rc = prog_proc_load_ident(f, ident);
+	if (rc != 0)
+		return rc;
 
 	proc = prog_module_proc_by_ident(mod, ident);
 	if (proc == NULL)
@@ -791,15 +812,9 @@ static int prog_stmt_call_load(prog_module_t *mod, FILE *f, prog_stmt_t **rstmt)
  */
 static int prog_stmt_call_save(prog_stmt_t *stmt, FILE *f)
 {
-	int rv;
-
 	assert(stmt->stype == progst_call);
 
-	rv = fprintf(f, "%s\n", stmt->s.scall.proc->ident);
-	if (rv < 0)
-		return EIO;
-
-	return 0;
+	return prog_proc_save_ident(stmt->s.scall.proc->ident, f);
 }
 
 /** Load if statement from file.
