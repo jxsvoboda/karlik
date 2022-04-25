@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Jiri Svoboda
+ * Copyright 2022 Jiri Svoboda
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * copy of this software and associated documentation files (the "Software"),
@@ -30,6 +30,10 @@
 #include "gfx.h"
 #include "map.h"
 #include "mapview.h"
+
+enum {
+	error_frame_width = 1
+};
 
 /** Create map view.
  *
@@ -85,6 +89,36 @@ void mapview_set_cb(mapview_t *mapview, mapview_cb_t cb, void *arg)
 	mapview->cb_arg = arg;
 }
 
+/** Draw error frame around map tile.
+ *
+ * Since this is implemented as a solid rectangle, it needs to be drawn
+ * prior to the tile itself.
+ *
+ * @param mapview Map view
+ * @param x X tile coordinate
+ * @param y Y tile coordinate
+ * @param gfx Graphics object to draw to
+ */
+void mapview_draw_error(mapview_t *mapview, int x, int y, gfx_t *gfx)
+{
+	int dx, dy;
+	int fx, fy, fw, fh;
+	uint32_t color;
+
+	dx = mapview->orig_x + (1 + x) * mapview->map->margin_x +
+	    x * mapview->map->tile_w;
+	dy = mapview->orig_y + (1 + y) * mapview->map->margin_y +
+	    y * mapview->map->tile_h;
+
+	fx = dx - error_frame_width;
+	fy = dy - error_frame_width;
+	fw = mapview->map->tile_w + 2 * error_frame_width;
+	fh = mapview->map->tile_h + 2 * error_frame_width;
+
+	color = gfx_rgb(gfx, 255, 0, 0);
+	gfx_rect(gfx, fx, fy, fw, fh, color);
+}
+
 /** Draw map view.
  *
  * @param mapview Map view
@@ -96,6 +130,7 @@ void mapview_draw(mapview_t *mapview, gfx_t *gfx)
 	int dx, dy;
 	map_t *map;
 	map_tile_t ttype;
+	robot_t *robot;
 
 	map = mapview->map;
 
@@ -106,6 +141,10 @@ void mapview_draw(mapview_t *mapview, gfx_t *gfx)
 		for (y = 0; y < map->height; y++) {
 			dy = mapview->orig_y + (1 + y) * map->margin_y +
 			    y * map->tile_h;
+
+			robot = robots_get(mapview->robots, x, y);
+			if (robot != NULL && robot_error(robot))
+				mapview_draw_error(mapview, x, y, gfx);
 
 			ttype = map_get(map, x, y);
 
