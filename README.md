@@ -44,7 +44,24 @@ Karlík is eager to learn more. Can you help him?
 
 WARNING
 -------
-Karlík is in early stages of development and functionality is minimal.
+Karlík is still under construction and not functionally complete.
+
+TODO
+----
+  * Proper images for error dialogs
+  * Icon dialog to provide icon for new procedure
+    * List of predrawn and existing icons
+    * Magnified view / drawing canvas
+    * Palette
+    * Preview
+    * Accept button
+  * Delete procedure
+  * Animate program execution step by step
+    * Show procedure / statement currently being executed in program view
+  * Calling procedure from procedure (call stack)
+  * Recursion
+  * Conditional statement
+  * Loop statement
 
 Compiling
 ---------
@@ -59,6 +76,54 @@ To build the software simply type:
 To start Karlík, just type:
 
     # ./karlik
+
+Using Karlík
+------------
+Karlík is very simple to understand and control. It does not use any text,
+only images. It is controlled using a mouse (or other pointing device)
+with just one button, using just clicks (no drag and drop, no doubleclick),
+making it suitable for children and beginners.
+
+Karlík automatically saves its state upon exit and restores it upon start.
+You can exit Karlík any time by pressing Escape or closing its window.
+When it is started next time, Karlík will continue exactly where it stopped,
+everything will be preserved.
+
+When you start Karlík up, on the top of the screen you can see the main
+toolbar. It allows you to select between two main modes: Vocabulary and Map.
+(Karlík starts up in Map mode by default).
+
+Map mode allows you to modify the city's map. The second toolbar allows you
+to select what you would like to place in the square: Wall, White tag,
+Grey tag, Black tag, Robot or Delete. Then click on the map to place
+or delete an object. The delete tool deletes all objects on a square.
+(A square can contain a robot and a tag, but not multiple tags, nor
+wall and something else).
+
+Vocabulary mode allows you to give the robot orders, to teach it new commands
+and examine existing commands. The second toolbar contains the Work,
+Learn and Examine icons.
+
+With the Work icon selected, you can give the robot commands. You do this
+by clicking on one of the verb icons at the bottom of the screen. If
+the robot cannot fulfill the command, an error dialog will be popped up
+containing a graphical representation of the specific error condition.
+There are three possible errors: (1) Robot hit a wall, (2) Robot tried
+to put down a tag on an already occupied square, (3) Robot tried to pick
+up a tag from an empty square. Clicking the error dialog will dismiss it.
+
+With the Learn icon selected, you can teach the robot a new command.
+Any new command consists of one or more pre-existing commands. You can
+append a new command by clicking one of the verb icons at the bottom of
+the screen. The robot does not executed the command, it just remembers it.
+The commands being entered are displayed on the right-hand side of the screen.
+
+Once done, click the Bell verb to finish entering the commands.
+
+With the Examine icon selected, you can examine existing complex commands.
+To examine a command, click on the corresponding verb icon at the bottom
+of the screen. The details of the command are now displayed on the
+right-hand side of the screen.
 
 Acknowledgements
 ----------------
