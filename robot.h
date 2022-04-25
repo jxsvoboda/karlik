@@ -23,6 +23,7 @@
 #ifndef ROBOT_H
 #define ROBOT_H
 
+#include <stdbool.h>
 #include <stdio.h>
 #include "adt/list.h"
 #include "dir.h"
@@ -44,6 +45,8 @@ typedef struct {
 	dir_t dir;
 	/** Current statement or @c NULL if not executing code */
 	prog_stmt_t *cur_stmt;
+	/** Robot stopped due to error */
+	bool error;
 } robot_t;
 
 extern int robot_create(int, int, dir_t, robot_t **);
@@ -51,13 +54,15 @@ extern void robot_destroy(robot_t *);
 extern int robot_load(FILE *, robot_t **);
 extern int robot_save(robot_t *, FILE *);
 extern void robot_turn_left(robot_t *);
-extern int robot_move(robot_t *);
-extern int robot_put_white(robot_t *);
-extern int robot_put_grey(robot_t *);
-extern int robot_put_black(robot_t *);
-extern int robot_pick_up(robot_t *);
+extern void robot_move(robot_t *);
+extern void robot_put_white(robot_t *);
+extern void robot_put_grey(robot_t *);
+extern void robot_put_black(robot_t *);
+extern void robot_pick_up(robot_t *);
 extern int robot_run_proc(robot_t *, prog_proc_t *);
 extern int robot_is_busy(robot_t *);
+extern int robot_error(robot_t *);
+extern void robot_clear_error(robot_t *);
 extern int robot_step(robot_t *);
 
 #endif

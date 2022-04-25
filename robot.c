@@ -26,6 +26,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include "dir.h"
 #include "map.h"
@@ -119,9 +120,8 @@ void robot_turn_left(robot_t *robot)
 /** Move robot one square forward.
  *
  * @param robot Robot
- * @return Zero on success, EINVAL if the square ahead is not accessible.
  */
-int robot_move(robot_t *robot)
+void robot_move(robot_t *robot)
 {
 	map_tile_t tile;
 	int xoff, yoff;
@@ -130,91 +130,88 @@ int robot_move(robot_t *robot)
 	dir_get_off(robot->dir, &xoff, &yoff);
 	tile = map_get(robot->robots->map, robot->x + xoff, robot->y + yoff);
 
-	if (!map_tile_walkable(tile))
-		return EINVAL;
+	if (!map_tile_walkable(tile)) {
+		robot->error = true;
+		return;
+	}
 
 	robots_move_robot(robot->robots, robot, xoff, yoff);
-
-	return 0;
 }
 
 /** Put down white tag.
  *
  * @param robot Robot
- * @return Zero on success, EINVAL if the square is not empty.
  */
-int robot_put_white(robot_t *robot)
+void robot_put_white(robot_t *robot)
 {
 	map_tile_t tile;
 
 	/* Get tile under robot */
 	tile = map_get(robot->robots->map, robot->x, robot->y);
 
-	if (tile != mapt_none)
-		return EINVAL;
+	if (tile != mapt_none) {
+		robot->error = true;
+		return;
+	}
 
 	map_set(robot->robots->map, robot->x, robot->y, mapt_wtag);
-
-	return 0;
 }
 
 /** Put down grey tag.
  *
  * @param robot Robot
- * @return Zero on success, EINVAL if the square is not empty.
  */
-int robot_put_grey(robot_t *robot)
+void robot_put_grey(robot_t *robot)
 {
 	map_tile_t tile;
 
 	/* Get tile under robot */
 	tile = map_get(robot->robots->map, robot->x, robot->y);
 
-	if (tile != mapt_none)
-		return EINVAL;
+	if (tile != mapt_none) {
+		robot->error = true;
+		return;
+	}
 
 	map_set(robot->robots->map, robot->x, robot->y, mapt_gtag);
-
-	return 0;
 }
 
 /** Put down black tag.
  *
  * @param robot Robot
- * @return Zero on success, EINVAL if the square is not empty.
  */
-int robot_put_black(robot_t *robot)
+void robot_put_black(robot_t *robot)
 {
 	map_tile_t tile;
 
 	/* Get tile under robot */
 	tile = map_get(robot->robots->map, robot->x, robot->y);
 
-	if (tile != mapt_none)
-		return EINVAL;
+	if (tile != mapt_none) {
+		robot->error = true;
+		return;
+	}
 
 	map_set(robot->robots->map, robot->x, robot->y, mapt_btag);
-
-	return 0;
 }
 
 /** Pick up tag.
  *
  * @param robot Robot
- * @return Zero on success, EINVAL if the square is empty.
  */
-int robot_pick_up(robot_t *robot)
+void robot_pick_up(robot_t *robot)
 {
 	map_tile_t tile;
 
 	/* Get tile under robot */
 	tile = map_get(robot->robots->map, robot->x, robot->y);
 
-	if (!map_tile_tag(tile))
-		return EINVAL;
+	if (!map_tile_tag(tile)) {
+		robot->error = true;
+		return;
+	}
 
 	map_set(robot->robots->map, robot->x, robot->y, mapt_none);
-	return 0;
 }
 
 /** Start executing procedure.
@@ -223,11 +220,12 @@ int robot_pick_up(robot_t *robot)
  *
  * @param robot Robot
  * @param proc Procedure
- * @return Zero on success. EBUSY if robot is already busy executing code.
+ * @return Zero on success. EBUSY if robot is already busy executing code
+ *         or stopped due to error.
  */
 int robot_run_proc(robot_t *robot, prog_proc_t *proc)
 {
-	if (robot->cur_stmt != NULL)
+	if (robot->cur_stmt != NULL || robot->error)
 		return EBUSY;
 
 	robot->cur_stmt = prog_block_first(proc->body);
@@ -244,42 +242,55 @@ int robot_is_busy(robot_t *robot)
 	return robot->cur_stmt != NULL;
 }
 
+/** Determine if robot is stopped due to error.
+ *
+ * @param robot Robot
+ * @return Non-zero if robot is executing code, zero if it is not.
+ */
+int robot_error(robot_t *robot)
+{
+	return robot->error;
+}
+
+void robot_clear_error(robot_t *robot)
+{
+	robot->error = false;
+}
+
 /** Step intrinsic statement.
  *
  * Steps the next statement, which must be an intrinsic statement.
  * @param robot Robot
- * @return Zero on success or an error code
  */
-static int robot_stmt_intrinsic(robot_t *robot)
+static void robot_stmt_intrinsic(robot_t *robot)
 {
-	int rc = 0;
-
 	assert(robot->cur_stmt->stype == progst_intrinsic);
 
 	switch (robot->cur_stmt->s.sintr.itype) {
 	case progin_turn_left:
 		robot_turn_left(robot);
-		rc = 0;
 		break;
 	case progin_move:
-		rc = robot_move(robot);
+		robot_move(robot);
 		break;
 	case progin_put_white:
-		rc = robot_put_white(robot);
+		robot_put_white(robot);
 		break;
 	case progin_put_grey:
-		rc = robot_put_grey(robot);
+		robot_put_grey(robot);
 		break;
 	case progin_put_black:
-		rc = robot_put_black(robot);
+		robot_put_black(robot);
 		break;
 	case progin_pick_up:
-		rc = robot_pick_up(robot);
+		robot_pick_up(robot);
 		break;
 	}
 
+	if (robot->error)
+		return;
+
 	robot->cur_stmt = prog_block_next(robot->cur_stmt);
-	return rc;
 }
 
 /** Advance one step in robot execution.
@@ -289,18 +300,18 @@ static int robot_stmt_intrinsic(robot_t *robot)
  */
 int robot_step(robot_t *robot)
 {
-	int rc;
-
 	if (robot->cur_stmt == NULL)
+		return EINVAL;
+	if (robot->error)
 		return EINVAL;
 
 	switch (robot->cur_stmt->stype) {
 	case progst_intrinsic:
-		rc = robot_stmt_intrinsic(robot);
+		robot_stmt_intrinsic(robot);
 		break;
 	default:
 		return ENOTSUP;
 	}
 
-	return rc;
+	return 0;
 }

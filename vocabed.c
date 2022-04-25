@@ -641,6 +641,9 @@ static void vocabed_work_verb_selected(void *arg, void *earg)
 
 	robot = robots_first(vocabed->robots);
 	while (robot != NULL) {
+		/* Clear error flag so that robot can continue. */
+		robot_clear_error(robot);
+
 		switch (verb->vtype) {
 		case verb_move:
 			robot_move(robot);
@@ -662,7 +665,7 @@ static void vocabed_work_verb_selected(void *arg, void *earg)
 			break;
 		case verb_call:
 			robot_run_proc(robot, verb->v.vcall.proc);
-			while (robot_is_busy(robot))
+			while (robot_is_busy(robot) && !robot_error(robot))
 				robot_step(robot);
 		default:
 			break;
