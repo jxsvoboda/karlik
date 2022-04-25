@@ -75,10 +75,11 @@ int robot_load(FILE *f, robot_t **rrobot)
 	int nitem;
 	int rc;
 	int x, y, dir;
+	unsigned error;
 	robot_t *robot;
 
-	nitem = fscanf(f, "%d %d %d\n", &x, &y, &dir);
-	if (nitem != 3)
+	nitem = fscanf(f, "%d %d %d %u\n", &x, &y, &dir, &error);
+	if (nitem != 4)
 		return EIO;
 
 	rc = robot_create(x, y, (dir_t)dir, &robot);
@@ -86,6 +87,9 @@ int robot_load(FILE *f, robot_t **rrobot)
 		assert(rc == ENOMEM);
 		return ENOMEM;
 	}
+
+	if (error != 0)
+		robot->error = true;
 
 	*rrobot = robot;
 	return 0;
@@ -101,7 +105,8 @@ int robot_save(robot_t *robot, FILE *f)
 {
 	int rv;
 
-	rv = fprintf(f, "%d %d %d\n", robot->x, robot->y, robot->dir);
+	rv = fprintf(f, "%d %d %d %u\n", robot->x, robot->y, robot->dir,
+	    robot->error ? 1 : 0);
 	if (rv < 0)
 		return EIO;
 
