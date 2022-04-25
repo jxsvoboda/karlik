@@ -86,6 +86,7 @@ static int vocabed_add_statement_verbs(vocabed_t *);
 static int vocabed_add_proc_verbs(vocabed_t *);
 static int vocabed_add_predefined_verb(vocabed_t *, vocabed_verb_type_t);
 static void vocabed_map_setup(vocabed_t *);
+static void vocabed_open_error_dlg(vocabed_t *, robot_error_t);
 static void vocabed_learn(vocabed_t *);
 static void vocabed_examine(vocabed_t *);
 static void vocabed_toolbar_cb(void *, int);
@@ -381,6 +382,7 @@ int vocabed_load(map_t *map, robots_t *robots, prog_module_t *prog, FILE *f,
 	unsigned state;
 	unsigned have_learn_proc;
 	unsigned have_examine_proc;
+	unsigned error;
 	prog_proc_t *proc;
 
 	rc = vocabed_create(map, robots, prog, cb, arg, &vocabed);
@@ -389,14 +391,13 @@ int vocabed_load(map_t *map, robots_t *robots, prog_module_t *prog, FILE *f,
 		goto error;
 	}
 
-	nitem = fscanf(f, "%u\n", &state);
-	if (nitem != 1) {
+	nitem = fscanf(f, "%u %u %u\n", &state, &have_learn_proc, &error);
+	if (nitem != 3) {
 		rc = EIO;
 		goto error;
 	}
 
-	nitem = fscanf(f, "%u\n", &have_learn_proc);
-	if (nitem != 1) {
+	if (error >= errt_limit) {
 		rc = EIO;
 		goto error;
 	}
@@ -450,6 +451,10 @@ int vocabed_load(map_t *map, robots_t *robots, prog_module_t *prog, FILE *f,
 		}
 	}
 
+	/* Error dialog should be open */
+	if (error != errt_none)
+		vocabed_open_error_dlg(vocabed, (robot_error_t)error);
+
 	map = NULL;
 
 	vocabed_map_setup(vocabed);
@@ -478,11 +483,9 @@ int vocabed_save(vocabed_t *vocabed, FILE *f)
 	int rc;
 	int rv;
 
-	rv = fprintf(f, "%u\n", (unsigned)vocabed->state);
-	if (rv < 0)
-		return EIO;
-
-	rv = fprintf(f, "%u\n", vocabed->learn_proc != NULL ? 1 : 0);
+	rv = fprintf(f, "%u %u %u\n", (unsigned)vocabed->state,
+	    vocabed->learn_proc != NULL ? 1 : 0,
+	    (unsigned)vocabed->errordlg_error);
 	if (rv < 0)
 		return EIO;
 
@@ -651,6 +654,25 @@ static void vocabed_mapview_cb(void *arg, int x, int y)
 	vocabed_repaint_req(vocabed);
 }
 
+/** Open error dialog.
+ *
+ * @param vocabed Vocabulary editor
+ * @param error Robot error
+ */
+static void vocabed_open_error_dlg(vocabed_t *vocabed, robot_error_t error)
+{
+	int rc;
+
+	/* Open error dialog */
+	rc = errordlg_create(vocabed->error_icons[error], &vocabed->errordlg);
+	if (rc == 0) {
+		errordlg_set_dims(vocabed->errordlg, 80, 60, 160, 120);
+		errordlg_set_cb(vocabed->errordlg, vocabed_errordlg_cb,
+		    vocabed);
+		vocabed->errordlg_error = error;
+	}
+}
+
 /** Vocabulary editor immeadite mode verbs callback.
  *
  * Called when a verb is selected in work mode.
@@ -664,7 +686,6 @@ static void vocabed_work_verb_selected(void *arg, void *earg)
 	vocabed_verb_t *verb = (vocabed_verb_t *)earg;
 	robot_t *robot;
 	robot_error_t error = errt_none;
-	int rc;
 
 	printf("Work mode. Verb type '%u'\n", verb->vtype);
 
@@ -710,15 +731,8 @@ static void vocabed_work_verb_selected(void *arg, void *earg)
 		robot = robots_next(robot);
 	}
 
-	if (error != errt_none) {
-		/* Open error dialog */
-		rc = errordlg_create(vocabed->error_icons[error], &vocabed->errordlg);
-		if (rc == 0) {
-			errordlg_set_dims(vocabed->errordlg, 80, 60, 160, 120);
-			errordlg_set_cb(vocabed->errordlg, vocabed_errordlg_cb,
-			    vocabed);
-		}
-	}
+	if (error != errt_none)
+		vocabed_open_error_dlg(vocabed, error);
 
 	vocabed_repaint_req(vocabed);
 }
@@ -847,6 +861,7 @@ static void vocabed_errordlg_cb(void *arg)
 
 	errordlg_destroy(vocabed->errordlg);
 	vocabed->errordlg = NULL;
+	vocabed->errordlg_error = errt_none;
 
 	vocabed_repaint_req(vocabed);
 }

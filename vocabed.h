@@ -99,10 +99,13 @@ typedef struct {
 	toolbar_t *tb;
 	/** Error dialog or @c NULL */
 	errordlg_t *errordlg;
+	/** Error displayed in error dialog */
+	robot_error_t errordlg_error;
 	/** Callbacks */
 	vocabed_cb_t *cb;
 	/** Verb icons */
 	gfx_bmp_t *verb_icons[verb_limit];
+	/** Error icons */
 	gfx_bmp_t *error_icons[errt_limit];
 	/** Callback argument */
 	void *arg;
