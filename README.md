@@ -1,6 +1,6 @@
 Karlík - Programming for preschoolers
 =====================================
-Copyright 2020 Jiří Svoboda
+Copyright 2022 Jiří Svoboda
 
 Permission is hereby granted, free of charge, to any person obtaining 
 copy of this software and associated documentation files (the "Software"),
@@ -78,6 +78,13 @@ To check ccstyle type
 
     $ make ccheck
 
-This requires the `ccheck` tool from the [Sycek project][1]
+This requires the `ccheck` tool from the [Sycek project][1]. Ccheck should
+not report any warnings.
+
+To run Clang analyzer type:
+
+    $ make clean && scan-build make
+
+The analyzer should produce no warnings or errors.
 
 [1]: https://github.com/jxsvoboda/sycek
