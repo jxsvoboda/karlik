@@ -50,7 +50,7 @@ int robot_create(int x, int y, dir_t dir, robot_t **rrobot)
 
 	robot->x = x;
 	robot->y = y;
-	robot->dir = dir_south;
+	robot->dir = dir;
 	*rrobot = robot;
 	return 0;
 }
