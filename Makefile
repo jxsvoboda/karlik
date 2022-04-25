@@ -29,6 +29,7 @@ LIBS	= `pkg-config --libs sdl2`
 sources = \
 	adt/list.c \
 	dir.c \
+	errordlg.c \
 	gfx.c \
 	karlik.c \
 	main.c \

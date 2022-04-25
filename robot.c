@@ -88,8 +88,11 @@ int robot_load(FILE *f, robot_t **rrobot)
 		return ENOMEM;
 	}
 
+	if (error >= errt_limit)
+		return EIO;
+
 	if (error != 0)
-		robot->error = true;
+		robot->error = error;
 
 	*rrobot = robot;
 	return 0;
@@ -136,7 +139,7 @@ void robot_move(robot_t *robot)
 	tile = map_get(robot->robots->map, robot->x + xoff, robot->y + yoff);
 
 	if (!map_tile_walkable(tile)) {
-		robot->error = true;
+		robot->error = errt_hit_wall;
 		return;
 	}
 
@@ -155,7 +158,7 @@ void robot_put_white(robot_t *robot)
 	tile = map_get(robot->robots->map, robot->x, robot->y);
 
 	if (tile != mapt_none) {
-		robot->error = true;
+		robot->error = errt_already_tag;
 		return;
 	}
 
@@ -174,7 +177,7 @@ void robot_put_grey(robot_t *robot)
 	tile = map_get(robot->robots->map, robot->x, robot->y);
 
 	if (tile != mapt_none) {
-		robot->error = true;
+		robot->error = errt_already_tag;
 		return;
 	}
 
@@ -193,7 +196,7 @@ void robot_put_black(robot_t *robot)
 	tile = map_get(robot->robots->map, robot->x, robot->y);
 
 	if (tile != mapt_none) {
-		robot->error = true;
+		robot->error = errt_already_tag;
 		return;
 	}
 
@@ -212,7 +215,7 @@ void robot_pick_up(robot_t *robot)
 	tile = map_get(robot->robots->map, robot->x, robot->y);
 
 	if (!map_tile_tag(tile)) {
-		robot->error = true;
+		robot->error = errt_no_tag;
 		return;
 	}
 
@@ -250,16 +253,20 @@ int robot_is_busy(robot_t *robot)
 /** Determine if robot is stopped due to error.
  *
  * @param robot Robot
- * @return Non-zero if robot is executing code, zero if it is not.
+ * @return Robot error code if robot is stopped or errt_none if it is not.
  */
-int robot_error(robot_t *robot)
+robot_error_t robot_error(robot_t *robot)
 {
 	return robot->error;
 }
 
+/** Clear robot error.
+ *
+ * @param robot Robot
+ */
 void robot_clear_error(robot_t *robot)
 {
-	robot->error = false;
+	robot->error = errt_none;
 }
 
 /** Step intrinsic statement.

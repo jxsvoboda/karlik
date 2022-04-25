@@ -26,6 +26,7 @@
 #include <SDL.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include "errordlg.h"
 #include "gfx.h"
 #include "mapview.h"
 #include "prog.h"
@@ -96,10 +97,13 @@ typedef struct {
 	vocabed_state_t state;
 	/** Vocabulary editor toolbar */
 	toolbar_t *tb;
+	/** Error dialog or @c NULL */
+	errordlg_t *errordlg;
 	/** Callbacks */
 	vocabed_cb_t *cb;
 	/** Verb icons */
 	gfx_bmp_t *verb_icons[verb_limit];
+	gfx_bmp_t *error_icons[errt_limit];
 	/** Callback argument */
 	void *arg;
 } vocabed_t;

@@ -75,6 +75,13 @@ static const vocabed_verb_type_t intrinsic_verbs[] = {
 	verb_limit
 };
 
+/** Error image files */
+static const char *vocabed_error_img_files[] = {
+	"img/error/hitwall.bmp",
+	"img/error/alreadytag.bmp",
+	"img/error/notag.bmp"
+};
+
 static int vocabed_add_statement_verbs(vocabed_t *);
 static int vocabed_add_proc_verbs(vocabed_t *);
 static int vocabed_add_predefined_verb(vocabed_t *, vocabed_verb_type_t);
@@ -82,6 +89,7 @@ static void vocabed_map_setup(vocabed_t *);
 static void vocabed_learn(vocabed_t *);
 static void vocabed_examine(vocabed_t *);
 static void vocabed_toolbar_cb(void *, int);
+static void vocabed_errordlg_cb(void *);
 
 static void vocabed_work_verb_selected(void *, void *);
 static void vocabed_learn_verb_selected(void *, void *);
@@ -114,6 +122,8 @@ void vocabed_display(vocabed_t *vocabed, gfx_t *gfx)
 	toolbar_draw(vocabed->tb, gfx);
 	progview_draw(vocabed->progview, gfx);
 	wordlist_draw(vocabed->verbs, gfx);
+	if (vocabed->errordlg != NULL)
+		errordlg_draw(vocabed->errordlg, gfx);
 }
 
 /** Request repaint.
@@ -285,6 +295,18 @@ static int vocabed_create(map_t *map, robots_t *robots, prog_module_t *prog,
 	while (*cp != NULL) {
 		printf("Load '%s'\n", *cp);
 		rc = gfx_bmp_load(*cp, &vocabed->verb_icons[i]);
+		if (rc != 0)
+			goto error;
+
+		++cp;
+		++i;
+	}
+
+	cp = vocabed_error_img_files;
+	i = errt_none + 1;
+	while (*cp != NULL) {
+		printf("Load '%s'\n", *cp);
+		rc = gfx_bmp_load(*cp, &vocabed->error_icons[i]);
 		if (rc != 0)
 			goto error;
 
@@ -515,6 +537,11 @@ void vocabed_event(vocabed_t *vocabed, SDL_Event *e, gfx_t *gfx)
 
 	(void) gfx;
 
+	if (vocabed->errordlg != NULL) {
+		if (errordlg_event(vocabed->errordlg, e))
+			return;
+	}
+
 	if (toolbar_event(vocabed->tb, e))
 		return;
 
@@ -636,8 +663,12 @@ static void vocabed_work_verb_selected(void *arg, void *earg)
 	vocabed_t *vocabed = (vocabed_t *)arg;
 	vocabed_verb_t *verb = (vocabed_verb_t *)earg;
 	robot_t *robot;
+	robot_error_t error = errt_none;
+	int rc;
 
 	printf("Work mode. Verb type '%u'\n", verb->vtype);
+
+	error = false;
 
 	robot = robots_first(vocabed->robots);
 	while (robot != NULL) {
@@ -665,13 +696,28 @@ static void vocabed_work_verb_selected(void *arg, void *earg)
 			break;
 		case verb_call:
 			robot_run_proc(robot, verb->v.vcall.proc);
-			while (robot_is_busy(robot) && !robot_error(robot))
+			while (robot_is_busy(robot) && robot_error(robot) ==
+			    errt_none) {
 				robot_step(robot);
+			}
 		default:
 			break;
 		}
 
+		if (robot_error(robot) != errt_none)
+			error = robot_error(robot);
+
 		robot = robots_next(robot);
+	}
+
+	if (error != errt_none) {
+		/* Open error dialog */
+		rc = errordlg_create(vocabed->error_icons[error], &vocabed->errordlg);
+		if (rc == 0) {
+			errordlg_set_dims(vocabed->errordlg, 80, 60, 160, 120);
+			errordlg_set_cb(vocabed->errordlg, vocabed_errordlg_cb,
+			    vocabed);
+		}
 	}
 
 	vocabed_repaint_req(vocabed);
@@ -791,6 +837,16 @@ static void vocabed_toolbar_cb(void *arg, int idx)
 		vocabed_examine(vocabed);
 		break;
 	}
+
+	vocabed_repaint_req(vocabed);
+}
+
+static void vocabed_errordlg_cb(void *arg)
+{
+	vocabed_t *vocabed = (vocabed_t *)arg;
+
+	errordlg_destroy(vocabed->errordlg);
+	vocabed->errordlg = NULL;
 
 	vocabed_repaint_req(vocabed);
 }

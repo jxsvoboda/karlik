@@ -29,6 +29,18 @@
 #include "dir.h"
 #include "prog.h"
 
+/** Robot errors */
+typedef enum {
+	/** No error */
+	errt_none,
+	/** Robot tried to move to a square occupied by wall */
+	errt_hit_wall,
+	/** Robot tried to put a tag on a square already occupied by a tag */
+	errt_already_tag,
+	/** Robot tried to pick up a tag, but there was no tag */
+	errt_no_tag
+} robot_error_t;
+
 /** Robot */
 typedef struct {
 	/** Containing robots structure */
@@ -45,9 +57,13 @@ typedef struct {
 	dir_t dir;
 	/** Current statement or @c NULL if not executing code */
 	prog_stmt_t *cur_stmt;
-	/** Robot stopped due to error */
-	bool error;
+	/** Was robot stopped due to error? */
+	robot_error_t error;
 } robot_t;
+
+enum {
+	errt_limit = errt_no_tag + 1
+};
 
 extern int robot_create(int, int, dir_t, robot_t **);
 extern void robot_destroy(robot_t *);
@@ -61,7 +77,7 @@ extern void robot_put_black(robot_t *);
 extern void robot_pick_up(robot_t *);
 extern int robot_run_proc(robot_t *, prog_proc_t *);
 extern int robot_is_busy(robot_t *);
-extern int robot_error(robot_t *);
+extern robot_error_t robot_error(robot_t *);
 extern void robot_clear_error(robot_t *);
 extern int robot_step(robot_t *);
 
