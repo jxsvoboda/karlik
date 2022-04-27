@@ -20,38 +20,51 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef GFX_H
-#define GFX_H
+#ifndef ICONDLG_H
+#define ICONDLG_H
 
 #include <SDL.h>
-#include <stdbool.h>
-#include <stdint.h>
+#include <stdio.h>
+#include "canvas.h"
+#include "gfx.h"
+#include "map.h"
+#include "robots.h"
 
+/** Icon dialog callbacks */
 typedef struct {
-	SDL_Window *win;
-} gfx_t;
+	void (*accept)(void *);
+	void (*repaint)(void *);
+} icondlg_cb_t;
 
+/** Icon dialog
+ *
+ * Allows the user to select from a list of existing icons, to modify
+ * it and finally to submit it.
+ */
 typedef struct {
-	SDL_Surface *surf;
-	int w;
-	int h;
-} gfx_bmp_t;
+	/** Error icon bitmap */
+	gfx_bmp_t *bmp;
+	/** Canvas */
+	canvas_t *canvas;
+	/** X coordinate of top-left corner on the screen */
+	int orig_x;
+	/** Y coordinate of top-left corner on the screen */
+	int orig_y;
+	/** Width in pixels */
+	int width;
+	/** Height in pixels */
+	int height;
+	/** Callbacks */
+	icondlg_cb_t *cb;
+	/** Callback argument */
+	void *cb_arg;
+} icondlg_t;
 
-extern int gfx_init(gfx_t *, bool);
-extern void gfx_quit(gfx_t *);
-extern void gfx_clear(gfx_t *);
-extern void gfx_rect(gfx_t *, int, int, int, int, uint32_t);
-extern uint32_t gfx_rgb(gfx_t *, uint8_t, uint8_t, uint8_t);
-extern int gfx_bmp_load(const char *, gfx_bmp_t **);
-extern void gfx_bmp_destroy(gfx_bmp_t *);
-extern void gfx_bmp_set_color_key(gfx_bmp_t *, uint8_t, uint8_t, uint8_t);
-extern void gfx_bmp_render(gfx_t *, gfx_bmp_t *, int, int);
-extern void gfx_bmp_get_pixel(gfx_bmp_t *, int, int, uint8_t *, uint8_t *,
-    uint8_t *);
-extern void gfx_bmp_set_pixel(gfx_bmp_t *, int, int, uint8_t, uint8_t, uint8_t);
-extern void gfx_set_wnd_icon(gfx_t *, gfx_bmp_t *);
-
-extern void gfx_update(gfx_t *);
-extern int gfx_wait_event(SDL_Event *);
+extern int icondlg_create(gfx_bmp_t *, icondlg_t **);
+extern void icondlg_destroy(icondlg_t *);
+extern void icondlg_set_dims(icondlg_t *, int, int, int, int);
+extern void icondlg_set_cb(icondlg_t *, icondlg_cb_t *, void *);
+extern void icondlg_draw(icondlg_t *, gfx_t *);
+extern bool icondlg_event(icondlg_t *, SDL_Event *);
 
 #endif

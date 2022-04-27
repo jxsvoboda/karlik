@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Jiri Svoboda
+ * Copyright 2022 Jiri Svoboda
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * copy of this software and associated documentation files (the "Software"),
@@ -178,7 +178,7 @@ void gfx_bmp_destroy(gfx_bmp_t *bmp)
  * @param g Green
  * @param b Blue
  */
-void gfx_bmp_set_color_key(gfx_bmp_t *bmp, int r, int g, int b)
+void gfx_bmp_set_color_key(gfx_bmp_t *bmp, uint8_t r, uint8_t g, uint8_t b)
 {
 	Uint32 key;
 
@@ -206,6 +206,59 @@ void gfx_bmp_render(gfx_t *gfx, gfx_bmp_t *bmp, int x, int y)
 	drect.h = bmp->surf->h * 2;
 
 	SDL_BlitScaled(bmp->surf, NULL, surf, &drect);
+}
+
+/** Get bitmap pixel.
+ *
+ * @param bmp Bitmap
+ * @param x X coordinate
+ * @param y Y coordinate
+ * @param r Place to store red component
+ * @param g Place to store green component
+ * @param b Place to store blue component
+ */
+void gfx_bmp_get_pixel(gfx_bmp_t *bmp, int x, int y, uint8_t *r, uint8_t *g,
+    uint8_t *b)
+{
+	uint8_t *pp;
+	uint32_t bpixel;
+
+	/* Get pixel value */
+
+	pp = (uint8_t *)bmp->surf->pixels + bmp->surf->pitch * y +
+	    3 * x;
+	bpixel = ((uint32_t)pp[2] << 16) +
+	    ((uint32_t)pp[1] << 8) +
+	    (uint32_t)pp[0];
+
+	/* Get RGB values */
+	SDL_GetRGB(bpixel, bmp->surf->format, r, g, b);
+}
+
+/** Set bitmap pixel.
+ *
+ * @param bmp Bitmap
+ * @param x X coordinate
+ * @param y Y coordinate
+ * @param r Red component
+ * @param g Green component
+ * @param b Blue component
+ */
+void gfx_bmp_set_pixel(gfx_bmp_t *bmp, int x, int y, uint8_t r, uint8_t g,
+    uint8_t b)
+{
+	uint8_t *pp;
+	uint32_t bpixel;
+
+	/* Compute pixel value */
+	bpixel = SDL_MapRGB(bmp->surf->format, r, g, b);
+
+	/* Write pixel value */
+	pp = (uint8_t *)bmp->surf->pixels + bmp->surf->pitch * y +
+	    3 * x;
+	pp[0] = bpixel & 0xff;
+	pp[1] = (bpixel >> 8) & 0xff;
+	pp[2] = (bpixel >> 16) & 0xff;
 }
 
 /** Set window icon.

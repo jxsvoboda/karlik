@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include "errordlg.h"
 #include "gfx.h"
+#include "icondlg.h"
 #include "mapview.h"
 #include "prog.h"
 #include "progview.h"
@@ -101,6 +102,8 @@ typedef struct {
 	errordlg_t *errordlg;
 	/** Error displayed in error dialog */
 	robot_error_t errordlg_error;
+	/** Icon dialog or @c NULL */
+	icondlg_t *icondlg;
 	/** Callbacks */
 	vocabed_cb_t *cb;
 	/** Verb icons */

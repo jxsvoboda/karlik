@@ -20,38 +20,43 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef GFX_H
-#define GFX_H
+#ifndef CANVAS_H
+#define CANVAS_H
 
 #include <SDL.h>
-#include <stdbool.h>
-#include <stdint.h>
+#include <stdio.h>
+#include "gfx.h"
 
+/** Canvas callbacks */
 typedef struct {
-	SDL_Window *win;
-} gfx_t;
+	void (*repaint)(void *arg);
+} canvas_cb_t;
 
+/** Canvas
+ *
+ * Display / draw into a bitmap
+ */
 typedef struct {
-	SDL_Surface *surf;
-	int w;
-	int h;
-} gfx_bmp_t;
+	/** Bitmap */
+	gfx_bmp_t *bmp;
+	/** X coordinate of top-left corner on the screen */
+	int orig_x;
+	/** Y coordinate of top-left corner on the screen */
+	int orig_y;
+	/** Magnification */
+	int mag;
+	/** Callbacks */
+	canvas_cb_t *cb;
+	/** Callback argument */
+	void *cb_arg;
+} canvas_t;
 
-extern int gfx_init(gfx_t *, bool);
-extern void gfx_quit(gfx_t *);
-extern void gfx_clear(gfx_t *);
-extern void gfx_rect(gfx_t *, int, int, int, int, uint32_t);
-extern uint32_t gfx_rgb(gfx_t *, uint8_t, uint8_t, uint8_t);
-extern int gfx_bmp_load(const char *, gfx_bmp_t **);
-extern void gfx_bmp_destroy(gfx_bmp_t *);
-extern void gfx_bmp_set_color_key(gfx_bmp_t *, uint8_t, uint8_t, uint8_t);
-extern void gfx_bmp_render(gfx_t *, gfx_bmp_t *, int, int);
-extern void gfx_bmp_get_pixel(gfx_bmp_t *, int, int, uint8_t *, uint8_t *,
-    uint8_t *);
-extern void gfx_bmp_set_pixel(gfx_bmp_t *, int, int, uint8_t, uint8_t, uint8_t);
-extern void gfx_set_wnd_icon(gfx_t *, gfx_bmp_t *);
-
-extern void gfx_update(gfx_t *);
-extern int gfx_wait_event(SDL_Event *);
+extern int canvas_create(gfx_bmp_t *, canvas_t **);
+extern void canvas_destroy(canvas_t *);
+extern void canvas_set_orig(canvas_t *, int, int);
+extern void canvas_set_mag(canvas_t *, int);
+extern void canvas_set_cb(canvas_t *, canvas_cb_t *, void *);
+extern void canvas_draw(canvas_t *, gfx_t *);
+extern bool canvas_event(canvas_t *, SDL_Event *);
 
 #endif

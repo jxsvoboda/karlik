@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Jiri Svoboda
+ * Copyright 2022 Jiri Svoboda
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * copy of this software and associated documentation files (the "Software"),
@@ -41,7 +41,7 @@ typedef struct {
 	robots_t *robots;
 	/** X coordinate of top-left corner on the screen */
 	int orig_x;
-	/** Y coordinate of top-left conrer on the screen */
+	/** Y coordinate of top-left corner on the screen */
 	int orig_y;
 	/** Called when user clicks on a map tile */
 	mapview_cb_t cb;

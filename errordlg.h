@@ -40,7 +40,7 @@ typedef struct {
 	gfx_bmp_t *bmp;
 	/** X coordinate of top-left corner on the screen */
 	int orig_x;
-	/** Y coordinate of top-left conrer on the screen */
+	/** Y coordinate of top-left corner on the screen */
 	int orig_y;
 	/** Width in pixels */
 	int width;

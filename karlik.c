@@ -94,6 +94,8 @@ static void karlik_display(karlik_t *karlik, gfx_t *gfx)
 {
 	gfx_clear(gfx);
 
+	toolbar_draw(karlik->main_tb, gfx);
+
 	switch (karlik->kmode) {
 	case km_map:
 		if (karlik->mapedit != NULL)
@@ -104,8 +106,6 @@ static void karlik_display(karlik_t *karlik, gfx_t *gfx)
 			vocabed_display(karlik->vocabed, gfx);
 		break;
 	}
-
-	toolbar_draw(karlik->main_tb, gfx);
 }
 
 /** Set up map for use (common between load and new)

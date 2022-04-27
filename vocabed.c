@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <SDL.h>
 #include "gfx.h"
+#include "icondlg.h"
 #include "mapview.h"
 #include "progview.h"
 #include "robots.h"
@@ -87,10 +88,13 @@ static int vocabed_add_proc_verbs(vocabed_t *);
 static int vocabed_add_predefined_verb(vocabed_t *, vocabed_verb_type_t);
 static void vocabed_map_setup(vocabed_t *);
 static void vocabed_open_error_dlg(vocabed_t *, robot_error_t);
+static void vocabed_open_icon_dlg(vocabed_t *);
 static void vocabed_learn(vocabed_t *);
 static void vocabed_examine(vocabed_t *);
 static void vocabed_toolbar_cb(void *, int);
 static void vocabed_errordlg_cb(void *);
+static void vocabed_icondlg_accept(void *);
+static void vocabed_icondlg_repaint(void *);
 
 static void vocabed_work_verb_selected(void *, void *);
 static void vocabed_learn_verb_selected(void *, void *);
@@ -112,6 +116,11 @@ static wordlist_cb_t vocabed_examine_verbs_cb = {
 	.destroy = vocabed_verb_destroy
 };
 
+static icondlg_cb_t vocabed_icondlg_cb = {
+	.accept = vocabed_icondlg_accept,
+	.repaint = vocabed_icondlg_repaint
+};
+
 /** Display vocabulary editor.
  *
  * @param vocabed Vocabulary editor
@@ -125,6 +134,8 @@ void vocabed_display(vocabed_t *vocabed, gfx_t *gfx)
 	wordlist_draw(vocabed->verbs, gfx);
 	if (vocabed->errordlg != NULL)
 		errordlg_draw(vocabed->errordlg, gfx);
+	if (vocabed->icondlg != NULL)
+		icondlg_draw(vocabed->icondlg, gfx);
 }
 
 /** Request repaint.
@@ -382,6 +393,7 @@ int vocabed_load(map_t *map, robots_t *robots, prog_module_t *prog, FILE *f,
 	unsigned state;
 	unsigned have_learn_proc;
 	unsigned have_examine_proc;
+	unsigned have_icon_dialog;
 	unsigned error;
 	prog_proc_t *proc;
 
@@ -391,8 +403,9 @@ int vocabed_load(map_t *map, robots_t *robots, prog_module_t *prog, FILE *f,
 		goto error;
 	}
 
-	nitem = fscanf(f, "%u %u %u\n", &state, &have_learn_proc, &error);
-	if (nitem != 3) {
+	nitem = fscanf(f, "%u %u %u %u\n", &state, &have_learn_proc, &error,
+	    &have_icon_dialog);
+	if (nitem != 4) {
 		rc = EIO;
 		goto error;
 	}
@@ -451,9 +464,13 @@ int vocabed_load(map_t *map, robots_t *robots, prog_module_t *prog, FILE *f,
 		}
 	}
 
-	/* Error dialog should be open */
+	/* Error dialog should be open? */
 	if (error != errt_none)
 		vocabed_open_error_dlg(vocabed, (robot_error_t)error);
+
+	/* Icon dialog should be open? */
+	if (have_icon_dialog != 0)
+		vocabed_open_icon_dlg(vocabed);
 
 	map = NULL;
 
@@ -483,9 +500,10 @@ int vocabed_save(vocabed_t *vocabed, FILE *f)
 	int rc;
 	int rv;
 
-	rv = fprintf(f, "%u %u %u\n", (unsigned)vocabed->state,
+	rv = fprintf(f, "%u %u %u %u\n", (unsigned)vocabed->state,
 	    vocabed->learn_proc != NULL ? 1 : 0,
-	    (unsigned)vocabed->errordlg_error);
+	    (unsigned)vocabed->errordlg_error,
+	    vocabed->icondlg != NULL ? 1 : 0);
 	if (rv < 0)
 		return EIO;
 
@@ -542,6 +560,11 @@ void vocabed_event(vocabed_t *vocabed, SDL_Event *e, gfx_t *gfx)
 
 	if (vocabed->errordlg != NULL) {
 		if (errordlg_event(vocabed->errordlg, e))
+			return;
+	}
+
+	if (vocabed->icondlg != NULL) {
+		if (icondlg_event(vocabed->icondlg, e))
 			return;
 	}
 
@@ -635,6 +658,8 @@ static void vocabed_learn_end(vocabed_t *vocabed)
 	vocabed->learn_proc = NULL;
 	progview_set_proc(vocabed->progview, NULL);
 
+	vocabed_open_icon_dlg(vocabed);
+
 	/* Return to work mode */
 	(void) vocabed_work(vocabed);
 	toolbar_select(vocabed->tb, vocabed->state);
@@ -670,6 +695,24 @@ static void vocabed_open_error_dlg(vocabed_t *vocabed, robot_error_t error)
 		errordlg_set_cb(vocabed->errordlg, vocabed_errordlg_cb,
 		    vocabed);
 		vocabed->errordlg_error = error;
+	}
+}
+
+/** Open icon dialog.
+ *
+ * @param vocabed Vocabulary editor
+ */
+static void vocabed_open_icon_dlg(vocabed_t *vocabed)
+{
+	int rc;
+
+	/* Open icon dialog */
+	rc = icondlg_create(vocabed->error_icons[errt_hit_wall],
+	    &vocabed->icondlg);
+	if (rc == 0) {
+		icondlg_set_dims(vocabed->icondlg, 40, 30, 240, 180);
+		icondlg_set_cb(vocabed->icondlg, &vocabed_icondlg_cb,
+		    vocabed);
 	}
 }
 
@@ -862,6 +905,31 @@ static void vocabed_errordlg_cb(void *arg)
 	errordlg_destroy(vocabed->errordlg);
 	vocabed->errordlg = NULL;
 	vocabed->errordlg_error = errt_none;
+
+	vocabed_repaint_req(vocabed);
+}
+
+/** Called when use accepts icon in icon dialog.
+ *
+ * @param arg Argument (vocabed_t *)
+ */
+static void vocabed_icondlg_accept(void *arg)
+{
+	vocabed_t *vocabed = (vocabed_t *)arg;
+
+	icondlg_destroy(vocabed->icondlg);
+	vocabed->icondlg = NULL;
+
+	vocabed_repaint_req(vocabed);
+}
+
+/** Handle icon dialog repaint request in vocabulary editor.
+ *
+ * @param arg Argument (vocabed_t *)
+ */
+static void vocabed_icondlg_repaint(void *arg)
+{
+	vocabed_t *vocabed = (vocabed_t *)arg;
 
 	vocabed_repaint_req(vocabed);
 }

@@ -43,7 +43,7 @@ typedef struct {
 	prog_proc_t *proc;
 	/** X coordinate of top-left corner on the screen */
 	int orig_x;
-	/** Y coordinate of top-left conrer on the screen */
+	/** Y coordinate of top-left corner on the screen */
 	int orig_y;
 	/** Icon width */
 	int icon_w;
