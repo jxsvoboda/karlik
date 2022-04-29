@@ -80,7 +80,7 @@ To start Karlík, just type:
 Using Karlík
 ------------
 
-# Foreword
+### Foreword
 
 Karlík is very simple to understand and control. It does not use any text,
 only images. It is controlled using a mouse (or other pointing device)
