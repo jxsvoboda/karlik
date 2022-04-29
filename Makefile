@@ -32,6 +32,7 @@ sources = \
 	dir.c \
 	errordlg.c \
 	gfx.c \
+	icondict.c \
 	icondlg.c \
 	karlik.c \
 	main.c \

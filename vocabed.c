@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <SDL.h>
 #include "gfx.h"
+#include "icondict.h"
 #include "icondlg.h"
 #include "mapview.h"
 #include "progview.h"
@@ -38,8 +39,8 @@
 #include "toolbar.h"
 
 enum {
-	tile_xs = 32,
-	tile_ys = 32,
+	proc_icon_width = 16,
+	proc_icon_height = 16,
 
 	orig_x = 320,
 	orig_y = 240
@@ -173,7 +174,7 @@ static int vocabed_work(vocabed_t *vocabed)
  *
  * @param vocabed Vocabulary editor
  * @param verb Predefined verb
- * @return EOK on success or an error code
+ * @return Zero on success or an error code
  */
 static int vocabed_add_predefined_verb(vocabed_t *vocabed,
     vocabed_verb_type_t vtype)
@@ -192,11 +193,12 @@ static int vocabed_add_predefined_verb(vocabed_t *vocabed,
  *
  * @param vocabed Vocabulary editor
  * @param proc Called procedure
- * @return EOK on success or an error code
+ * @return Zero on success or an error code
  */
 static int vocabed_add_call_verb(vocabed_t *vocabed, prog_proc_t *proc)
 {
 	vocabed_verb_t *verb;
+	icondict_entry_t *entry;
 
 	verb = calloc(1, sizeof(vocabed_verb_t));
 	if (verb == NULL)
@@ -204,8 +206,12 @@ static int vocabed_add_call_verb(vocabed_t *vocabed, prog_proc_t *proc)
 
 	verb->vtype = verb_call;
 	verb->v.vcall.proc = proc;
-	return wordlist_add(vocabed->verbs, vocabed->verb_icons[verb_move],
-	    verb);
+
+	/* Find corresponding icon */
+	entry = icondict_find(vocabed->icondict, proc->ident);
+	assert (entry != NULL);
+
+	return wordlist_add(vocabed->verbs, entry->icon, verb);
 }
 
 /** Add statement verbs to the verb list.
@@ -274,6 +280,10 @@ static int vocabed_create(map_t *map, robots_t *robots, prog_module_t *prog,
 	if (vocabed == NULL)
 		return ENOMEM;
 
+	rc = icondict_create(&vocabed->icondict);
+	if (rc != 0)
+		goto error;
+
 	rc = mapview_create(map, robots, &vocabed->mapview);
 	if (rc != 0)
 		goto error;
@@ -332,10 +342,6 @@ static int vocabed_create(map_t *map, robots_t *robots, prog_module_t *prog,
 	vocabed->robots = robots;
 	vocabed->prog = prog;
 
-	rc = vocabed_work(vocabed);
-	if (rc != 0)
-		goto error;
-
 	*rvocabed = vocabed;
 	return 0;
 error:
@@ -360,8 +366,12 @@ int vocabed_new(map_t *map, robots_t *robots, prog_module_t *prog,
 	int rc;
 
 	rc = vocabed_create(map, robots, prog, cb, arg, &vocabed);
+	if (rc != 0)
+		return rc;
+
+	rc = vocabed_work(vocabed);
 	if (rc != 0) {
-		map_destroy(map);
+		vocabed_destroy(vocabed);
 		return rc;
 	}
 
@@ -402,6 +412,10 @@ int vocabed_load(map_t *map, robots_t *robots, prog_module_t *prog, FILE *f,
 		rc = ENOMEM;
 		goto error;
 	}
+
+	rc = icondict_load(f, &vocabed->icondict);
+	if (rc != 0)
+		goto error;
 
 	nitem = fscanf(f, "%u %u %u %u\n", &state, &have_learn_proc, &error,
 	    &have_icon_dialog);
@@ -480,6 +494,8 @@ int vocabed_load(map_t *map, robots_t *robots, prog_module_t *prog, FILE *f,
 	*rvocabed = vocabed;
 	return 0;
 error:
+	if (vocabed->icondict != NULL)
+		icondict_destroy(vocabed->icondict);
 	if (vocabed != NULL)
 		vocabed_destroy(vocabed);
 	if (map != NULL)
@@ -499,6 +515,10 @@ int vocabed_save(vocabed_t *vocabed, FILE *f)
 	prog_proc_t *vproc;
 	int rc;
 	int rv;
+
+	rc = icondict_save(vocabed->icondict, f);
+	if (rc != 0)
+		return rc;
 
 	rv = fprintf(f, "%u %u %u %u\n", (unsigned)vocabed->state,
 	    vocabed->learn_proc != NULL ? 1 : 0,
@@ -653,16 +673,7 @@ static void vocabed_learn_end(vocabed_t *vocabed)
 {
 	printf("Learn end!\n");
 
-	/* Append new procedure to program */
-	prog_module_append(vocabed->prog, vocabed->learn_proc);
-	vocabed->learn_proc = NULL;
-	progview_set_proc(vocabed->progview, NULL);
-
 	vocabed_open_icon_dlg(vocabed);
-
-	/* Return to work mode */
-	(void) vocabed_work(vocabed);
-	toolbar_select(vocabed->tb, vocabed->state);
 }
 
 /** Vocabulary editor callback.
@@ -704,16 +715,23 @@ static void vocabed_open_error_dlg(vocabed_t *vocabed, robot_error_t error)
  */
 static void vocabed_open_icon_dlg(vocabed_t *vocabed)
 {
+	gfx_bmp_t *bmp;
 	int rc;
 
+	rc = gfx_bmp_create(proc_icon_width, proc_icon_height, &bmp);
+	if (rc != 0)
+		return;
+
 	/* Open icon dialog */
-	rc = icondlg_create(vocabed->error_icons[errt_hit_wall],
-	    &vocabed->icondlg);
-	if (rc == 0) {
-		icondlg_set_dims(vocabed->icondlg, 40, 30, 240, 180);
-		icondlg_set_cb(vocabed->icondlg, &vocabed_icondlg_cb,
-		    vocabed);
+	rc = icondlg_create(bmp, &vocabed->icondlg);
+	if (rc != 0) {
+		gfx_bmp_destroy(bmp);
+		return;
 	}
+
+	icondlg_set_dims(vocabed->icondlg, 40, 30, 240, 180);
+	icondlg_set_cb(vocabed->icondlg, &vocabed_icondlg_cb,
+	    vocabed);
 }
 
 /** Vocabulary editor immeadite mode verbs callback.
@@ -916,9 +934,24 @@ static void vocabed_errordlg_cb(void *arg)
 static void vocabed_icondlg_accept(void *arg)
 {
 	vocabed_t *vocabed = (vocabed_t *)arg;
+	int rc;
+
+	rc = icondict_add(vocabed->icondict, vocabed->learn_proc->ident,
+	    vocabed->icondlg->bmp);
+	if (rc != 0)
+		gfx_bmp_destroy(vocabed->icondlg->bmp);
 
 	icondlg_destroy(vocabed->icondlg);
 	vocabed->icondlg = NULL;
+
+	/* Append new procedure to program */
+	prog_module_append(vocabed->prog, vocabed->learn_proc);
+	vocabed->learn_proc = NULL;
+	progview_set_proc(vocabed->progview, NULL);
+
+	/* Return to work mode */
+	(void) vocabed_work(vocabed);
+	toolbar_select(vocabed->tb, vocabed->state);
 
 	vocabed_repaint_req(vocabed);
 }
@@ -940,6 +973,8 @@ static void vocabed_icondlg_repaint(void *arg)
  */
 void vocabed_destroy(vocabed_t *vocabed)
 {
+	if (vocabed->icondict != NULL)
+		icondict_destroy(vocabed->icondict);
 	if (vocabed->mapview != NULL)
 		mapview_destroy(vocabed->mapview);
 	if (vocabed->progview != NULL)

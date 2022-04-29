@@ -135,6 +135,33 @@ void gfx_update(gfx_t *gfx)
 	SDL_UpdateWindowSurface(gfx->win);
 }
 
+/** Create new bitmap.
+ *
+ * @param w Width
+ * @param h Height
+ * @param rbmp Place to store pointer to new bitmap
+ * @return Zero on success or an error code
+ */
+int gfx_bmp_create(int w, int h, gfx_bmp_t **rbmp)
+{
+	gfx_bmp_t *bmp;
+
+	bmp = calloc(1, sizeof(gfx_bmp_t));
+	if (bmp == NULL)
+		return ENOMEM;
+
+	bmp->surf = SDL_CreateRGBSurface(0, w, h, 24, 0, 0, 0, 0);
+	if (bmp->surf == NULL) {
+		free(bmp);
+		return EIO;
+	}
+
+	bmp->w = bmp->surf->w;
+	bmp->h = bmp->surf->h;
+	*rbmp = bmp;
+	return 0;
+}
+
 /** Load bitmap from BMP file.
  *
  * @param fname File name

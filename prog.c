@@ -153,7 +153,7 @@ int prog_module_save(prog_module_t *mod, FILE *f)
  *
  * @param mod Module that will contain the procedure
  * @param rident Place to store pointer to newly allocated string
- * @return EOK on success, ENOMEM if out of memory
+ * @return Zero on success, ENOMEM if out of memory
  */
 int prog_module_gen_ident(prog_module_t *mod, char **rident)
 {

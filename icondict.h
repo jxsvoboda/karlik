@@ -20,39 +20,40 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef GFX_H
-#define GFX_H
+#ifndef ICONDICT_H
+#define ICONDICT_H
 
-#include <SDL.h>
 #include <stdbool.h>
-#include <stdint.h>
+#include <stdio.h>
+#include "adt/list.h"
+#include "gfx.h"
 
+/** Icon dictionary */
 typedef struct {
-	SDL_Window *win;
-} gfx_t;
+	/** Containing icon dictionary */
+	struct icondict *icondict;
+	/** Link to @c wlist->entries */
+	link_t lidict;
+	/** Identifier */
+	char *ident;
+	/** Icon */
+	gfx_bmp_t *icon;
+} icondict_entry_t;
 
-typedef struct {
-	SDL_Surface *surf;
-	int w;
-	int h;
-} gfx_bmp_t;
+/** Icon dictionary */
+typedef struct icondict {
+	/** Entries (icondict_entry_t) */
+	list_t entries;
+} icondict_t;
 
-extern int gfx_init(gfx_t *, bool);
-extern void gfx_quit(gfx_t *);
-extern void gfx_clear(gfx_t *);
-extern void gfx_rect(gfx_t *, int, int, int, int, uint32_t);
-extern uint32_t gfx_rgb(gfx_t *, uint8_t, uint8_t, uint8_t);
-extern int gfx_bmp_create(int, int, gfx_bmp_t **);
-extern int gfx_bmp_load(const char *, gfx_bmp_t **);
-extern void gfx_bmp_destroy(gfx_bmp_t *);
-extern void gfx_bmp_set_color_key(gfx_bmp_t *, uint8_t, uint8_t, uint8_t);
-extern void gfx_bmp_render(gfx_t *, gfx_bmp_t *, int, int);
-extern void gfx_bmp_get_pixel(gfx_bmp_t *, int, int, uint8_t *, uint8_t *,
-    uint8_t *);
-extern void gfx_bmp_set_pixel(gfx_bmp_t *, int, int, uint8_t, uint8_t, uint8_t);
-extern void gfx_set_wnd_icon(gfx_t *, gfx_bmp_t *);
-
-extern void gfx_update(gfx_t *);
-extern int gfx_wait_event(SDL_Event *);
+extern int icondict_create(icondict_t **);
+extern void icondict_destroy(icondict_t *);
+extern int icondict_add(icondict_t *, const char *, gfx_bmp_t *);
+extern void icondict_remove(icondict_entry_t *);
+extern icondict_entry_t *icondict_first(icondict_t *);
+extern icondict_entry_t *icondict_next(icondict_entry_t *);
+extern icondict_entry_t *icondict_find(icondict_t *, const char *);
+extern int icondict_load(FILE *, icondict_t **);
+extern int icondict_save(icondict_t *, FILE *);
 
 #endif

@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include "errordlg.h"
 #include "gfx.h"
+#include "icondict.h"
 #include "icondlg.h"
 #include "mapview.h"
 #include "prog.h"
@@ -94,6 +95,8 @@ typedef struct {
 	prog_module_t *prog;
 	/** Procedure currently learning */
 	prog_proc_t *learn_proc;
+	/** Icon dictionary */
+	icondict_t *icondict;
 	/** State */
 	vocabed_state_t state;
 	/** Vocabulary editor toolbar */
