@@ -60,6 +60,11 @@ static int robots_key[3] = {
 	72, 72, 72
 };
 
+enum {
+	robot_def_x = 4,
+	robot_def_y = 4
+};
+
 /** Robot image file names */
 static const char *robots_files[] = {
 	"img/robot/east.bmp",
@@ -185,6 +190,8 @@ static int karlik_new(karlik_t *karlik)
 	    &karlik_vocabed_cb, (void *)karlik, &karlik->vocabed);
 	if (rc != 0)
 		return rc;
+
+	(void) robots_add(karlik->robots, robot_def_x, robot_def_y);
 
 	return 0;
 }
@@ -417,7 +424,7 @@ int karlik_create(gfx_t *gfx, karlik_t **rkarlik)
 
 	karlik->gfx = gfx;
 	karlik->quit = false;
-	karlik->kmode = km_map;
+	karlik->kmode = km_vocab;
 
 	rc = toolbar_create(main_tb_files, &karlik->main_tb);
 	if (rc != 0) {
