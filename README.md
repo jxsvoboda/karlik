@@ -79,6 +79,9 @@ To start Karlík, just type:
 
 Using Karlík
 ------------
+
+# Foreword
+
 Karlík is very simple to understand and control. It does not use any text,
 only images. It is controlled using a mouse (or other pointing device)
 with just one button, using just clicks (no drag and drop, no doubleclick),
@@ -89,9 +92,19 @@ You can exit Karlík any time by pressing Escape or closing its window.
 When it is started next time, Karlík will continue exactly where it stopped,
 everything will be preserved.
 
-When you start Karlík up, on the top of the screen you can see the main
-toolbar. It allows you to select between two main modes: Vocabulary and Map.
-(Karlík starts up in Map mode by default).
+# Starting up for the first time
+
+When you start Karlík up, you will see Karlík standing in his city.
+On the top of the screen you can see the main toolbar. It allows you to
+select between two main modes: Vocabulary and Map.
+(Karlík starts up in Vocabulary mode by default).
+
+# Vocabulary mode and Map mode
+
+Vocabulary mode allows you to give the robot orders, to teach it new commands
+and examine existing commands. The second toolbar contains the Work,
+Learn and Examine icons. On the bottom of the screen you can see a number
+of commands that you can give to the robot and it will execute them.
 
 Map mode allows you to modify the city's map. The second toolbar allows you
 to select what you would like to place in the square: Wall, White tag,
@@ -100,9 +113,7 @@ or delete an object. The delete tool deletes all objects on a square.
 (A square can contain a robot and a tag, but not multiple tags, nor
 wall and something else).
 
-Vocabulary mode allows you to give the robot orders, to teach it new commands
-and examine existing commands. The second toolbar contains the Work,
-Learn and Examine icons.
+# Commanding the robot
 
 With the Work icon selected, you can give the robot commands. You do this
 by clicking on one of the verb icons at the bottom of the screen. If
@@ -112,6 +123,8 @@ There are three possible errors: (1) Robot hit a wall, (2) Robot tried
 to put down a tag on an already occupied square, (3) Robot tried to pick
 up a tag from an empty square. Clicking the error dialog will dismiss it.
 
+# Teaching the robot new commands
+
 With the Learn icon selected, you can teach the robot a new command.
 Any new command consists of one or more pre-existing commands. You can
 append a new command by clicking one of the verb icons at the bottom of
@@ -119,6 +132,8 @@ the screen. The robot does not executed the command, it just remembers it.
 The commands being entered are displayed on the right-hand side of the screen.
 
 Once done, click the Bell verb to finish entering the commands.
+
+# Examining commands
 
 With the Examine icon selected, you can examine existing complex commands.
 To examine a command, click on the corresponding verb icon at the bottom
