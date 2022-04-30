@@ -122,9 +122,12 @@ void canvas_draw(canvas_t *canvas, gfx_t *gfx)
 bool canvas_event(canvas_t *canvas, SDL_Event *event)
 {
 	SDL_MouseButtonEvent *mbe;
+	SDL_MouseMotionEvent *mme;
 	int x, y;
 
-	if (event->type == SDL_MOUSEBUTTONDOWN) {
+	if (event->type == SDL_MOUSEBUTTONDOWN || event->type == SDL_MOUSEBUTTONUP) {
+		canvas->button_held = (event->type == SDL_MOUSEBUTTONDOWN);
+
 		mbe = (SDL_MouseButtonEvent *)event;
 		x = (mbe->x - canvas->orig_x) / canvas->mag;
 		y = (mbe->y - canvas->orig_y) / canvas->mag;
@@ -135,6 +138,21 @@ bool canvas_event(canvas_t *canvas, SDL_Event *event)
 				canvas->cb->repaint(canvas->cb_arg);
 			return true;
 		}
+
+	}
+
+	if (event->type == SDL_MOUSEMOTION && canvas->button_held) {
+		mme = (SDL_MouseMotionEvent *)event;
+		x = (mme->x - canvas->orig_x) / canvas->mag;
+		y = (mme->y - canvas->orig_y) / canvas->mag;
+		if (x >= 0 && y >= 0 && x < canvas->bmp->w &&
+		    y < canvas->bmp->h) {
+			gfx_bmp_set_pixel(canvas->bmp, x, y, 80, 160, 240);
+			if (canvas->cb != NULL && canvas->cb->repaint != NULL)
+				canvas->cb->repaint(canvas->cb_arg);
+			return true;
+		}
+
 	}
 
 	return false;

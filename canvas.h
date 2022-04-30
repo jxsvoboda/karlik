@@ -24,6 +24,7 @@
 #define CANVAS_H
 
 #include <SDL.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include "gfx.h"
 
@@ -45,6 +46,8 @@ typedef struct {
 	int orig_y;
 	/** Magnification */
 	int mag;
+	/** Mouse button held */
+	bool button_held;
 	/** Callbacks */
 	canvas_cb_t *cb;
 	/** Callback argument */

@@ -307,6 +307,7 @@ int gfx_wait_event(SDL_Event *e)
 {
 	int rv;
 	SDL_MouseButtonEvent *mbe;
+	SDL_MouseMotionEvent *mme;
 
 	rv = SDL_WaitEvent(e);
 	if (rv == 0)
@@ -314,10 +315,16 @@ int gfx_wait_event(SDL_Event *e)
 
 	/* Need to unscale screen coordinates */
 
-	if (e->type == SDL_MOUSEBUTTONDOWN) {
+	if (e->type == SDL_MOUSEBUTTONDOWN || e->type == SDL_MOUSEBUTTONUP) {
 		mbe = (SDL_MouseButtonEvent *)e;
 		mbe->x /= 2;
 		mbe->y /= 2;
+	}
+
+	if (e->type == SDL_MOUSEMOTION) {
+		mme = (SDL_MouseMotionEvent *)e;
+		mme->x /= 2;
+		mme->y /= 2;
 	}
 
 	return 1;
