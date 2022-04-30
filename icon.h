@@ -20,55 +20,21 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef ICONDLG_H
-#define ICONDLG_H
+#ifndef ICON_H
+#define ICON_H
 
-#include <SDL.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include "canvas.h"
 #include "gfx.h"
-#include "icon.h"
-#include "map.h"
-#include "robots.h"
 
-/** Icon dialog callbacks */
-typedef struct {
-	void (*accept)(void *);
-	void (*repaint)(void *);
-} icondlg_cb_t;
-
-/** Icon dialog
- *
- * Allows the user to select from a list of existing icons, to modify
- * it and finally to submit it.
- */
+/** Icon */
 typedef struct {
 	/** Icon */
-	icon_t *icon;
-	/** Canvas */
-	canvas_t *canvas;
-	/** X coordinate of top-left corner on the screen */
-	int orig_x;
-	/** Y coordinate of top-left corner on the screen */
-	int orig_y;
-	/** Width in pixels */
-	int width;
-	/** Height in pixels */
-	int height;
-	/** Callbacks */
-	icondlg_cb_t *cb;
-	/** Callback argument */
-	void *cb_arg;
-} icondlg_t;
+	gfx_bmp_t *bmp;
+} icon_t;
 
-extern int icondlg_create(icon_t *, icondlg_t **);
-extern void icondlg_destroy(icondlg_t *);
-extern int icondlg_load(FILE *, icondlg_t **);
-extern int icondlg_save(icondlg_t *, FILE *);
-extern void icondlg_set_dims(icondlg_t *, int, int, int, int);
-extern void icondlg_set_cb(icondlg_t *, icondlg_cb_t *, void *);
-extern void icondlg_draw(icondlg_t *, gfx_t *);
-extern bool icondlg_event(icondlg_t *, SDL_Event *);
+extern int icon_create(int, int, icon_t **);
+extern void icon_destroy(icon_t *);
+extern int icon_load(FILE *, icon_t **);
+extern int icon_save(icon_t *, FILE *);
 
 #endif

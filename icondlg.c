@@ -29,6 +29,7 @@
 #include <stdbool.h>
 #include "gfx.h"
 #include "map.h"
+#include "icon.h"
 #include "icondlg.h"
 
 enum {
@@ -44,12 +45,12 @@ static canvas_cb_t icondlg_canvas_cb = {
 
 /** Create icon dialog.
  *
- * @param bmp Bitmap
+ * @param icon Icon
  * @param ricondlg Place to store pointer to new icon dialog
  *
  * @return Zero on success or error code
  */
-int icondlg_create(gfx_bmp_t *bmp, icondlg_t **ricondlg)
+int icondlg_create(icon_t *icon, icondlg_t **ricondlg)
 {
 	icondlg_t *icondlg;
 	int rc;
@@ -58,13 +59,13 @@ int icondlg_create(gfx_bmp_t *bmp, icondlg_t **ricondlg)
 	if (icondlg == NULL)
 		return ENOMEM;
 
-	rc = canvas_create(bmp, &icondlg->canvas);
+	rc = canvas_create(icon->bmp, &icondlg->canvas);
 	if (rc != 0) {
 		free(icondlg);
 		return rc;
 	}
 
-	icondlg->bmp = bmp;
+	icondlg->icon = icon;
 	canvas_set_cb(icondlg->canvas, &icondlg_canvas_cb, icondlg);
 
 	*ricondlg = icondlg;
@@ -79,6 +80,47 @@ void icondlg_destroy(icondlg_t *icondlg)
 {
 	canvas_destroy(icondlg->canvas);
 	free(icondlg);
+}
+
+/** Load icon dialog from file.
+ *
+ * @param f File
+ * @param ricondlg Place to store pointer to new icon dialog
+ * @return Zero on success or an error code
+ */
+int icondlg_load(FILE *f, icondlg_t **ricondlg)
+{
+	icon_t *icon;
+	int rc;
+
+	rc = icon_load(f, &icon);
+	if (rc != 0)
+		return rc;
+
+	rc = icondlg_create(icon, ricondlg);
+	if (rc != 0) {
+		icon_destroy(icon);
+		return rc;
+	}
+
+	return 0;
+}
+
+/** Save icon dialog to file.
+ *
+ * @param icondlg Icon dialog
+ * @param f File
+ * @return Zero on success or an error code
+ */
+int icondlg_save(icondlg_t *icondlg, FILE *f)
+{
+	int rc;
+
+	rc = icon_save(icondlg->icon, f);
+	if (rc != 0)
+		return rc;
+
+	return 0;
 }
 
 /** Set icon dialog dimensions.
@@ -99,9 +141,9 @@ void icondlg_set_dims(icondlg_t *icondlg, int x, int y, int w, int h)
 
 	/* Center canvas in the dialog window */
 	cx = icondlg->orig_x + icondlg->width / 2 -
-	    icondlg->bmp->w * icon_mag / 2;
+	    icondlg->icon->bmp->w * icon_mag / 2;
 	cy = icondlg->orig_y + icondlg->height / 2 -
-	    icondlg->bmp->h * icon_mag / 2;
+	    icondlg->icon->bmp->h * icon_mag / 2;
 
 	canvas_set_orig(icondlg->canvas, cx, cy);
 	canvas_set_mag(icondlg->canvas, icon_mag);

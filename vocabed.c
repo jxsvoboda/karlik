@@ -90,6 +90,7 @@ static int vocabed_add_predefined_verb(vocabed_t *, vocabed_verb_type_t);
 static void vocabed_map_setup(vocabed_t *);
 static void vocabed_open_error_dlg(vocabed_t *, robot_error_t);
 static void vocabed_open_icon_dlg(vocabed_t *);
+static void vocabed_setup_icon_dlg(vocabed_t *);
 static void vocabed_learn(vocabed_t *);
 static void vocabed_examine(vocabed_t *);
 static void vocabed_toolbar_cb(void *, int);
@@ -211,7 +212,7 @@ static int vocabed_add_call_verb(vocabed_t *vocabed, prog_proc_t *proc)
 	entry = icondict_find(vocabed->icondict, proc->ident);
 	assert (entry != NULL);
 
-	return wordlist_add(vocabed->verbs, entry->icon, verb);
+	return wordlist_add(vocabed->verbs, entry->icon->bmp, verb);
 }
 
 /** Add statement verbs to the verb list.
@@ -483,8 +484,14 @@ int vocabed_load(map_t *map, robots_t *robots, prog_module_t *prog, FILE *f,
 		vocabed_open_error_dlg(vocabed, (robot_error_t)error);
 
 	/* Icon dialog should be open? */
-	if (have_icon_dialog != 0)
-		vocabed_open_icon_dlg(vocabed);
+	if (have_icon_dialog != 0) {
+		printf("Load icon dialog..\n");
+		rc = icondlg_load(f, &vocabed->icondlg);
+		if (rc != 0)
+			goto error;
+
+		vocabed_setup_icon_dlg(vocabed);
+	}
 
 	map = NULL;
 
@@ -545,6 +552,12 @@ int vocabed_save(vocabed_t *vocabed, FILE *f)
 			if (rc != 0)
 				return rc;
 		}
+	}
+
+	if (vocabed->icondlg != NULL) {
+		rc = icondlg_save(vocabed->icondlg, f);
+		if (rc != 0)
+			return rc;
 	}
 
 	return 0;
@@ -709,29 +722,38 @@ static void vocabed_open_error_dlg(vocabed_t *vocabed, robot_error_t error)
 	}
 }
 
+/** Set up a loaded or created icon dialog.
+ *
+ * @param vocabed Vocabulary editor
+ */
+static void vocabed_setup_icon_dlg(vocabed_t *vocabed)
+{
+	icondlg_set_dims(vocabed->icondlg, 40, 30, 240, 180);
+	icondlg_set_cb(vocabed->icondlg, &vocabed_icondlg_cb,
+	    vocabed);
+}
+
 /** Open icon dialog.
  *
  * @param vocabed Vocabulary editor
  */
 static void vocabed_open_icon_dlg(vocabed_t *vocabed)
 {
-	gfx_bmp_t *bmp;
+	icon_t *icon;
 	int rc;
 
-	rc = gfx_bmp_create(proc_icon_width, proc_icon_height, &bmp);
+	rc = icon_create(proc_icon_width, proc_icon_height, &icon);
 	if (rc != 0)
 		return;
 
 	/* Open icon dialog */
-	rc = icondlg_create(bmp, &vocabed->icondlg);
+	rc = icondlg_create(icon, &vocabed->icondlg);
 	if (rc != 0) {
-		gfx_bmp_destroy(bmp);
+		icon_destroy(icon);
 		return;
 	}
 
-	icondlg_set_dims(vocabed->icondlg, 40, 30, 240, 180);
-	icondlg_set_cb(vocabed->icondlg, &vocabed_icondlg_cb,
-	    vocabed);
+	vocabed_setup_icon_dlg(vocabed);
 }
 
 /** Vocabulary editor immeadite mode verbs callback.
@@ -937,9 +959,9 @@ static void vocabed_icondlg_accept(void *arg)
 	int rc;
 
 	rc = icondict_add(vocabed->icondict, vocabed->learn_proc->ident,
-	    vocabed->icondlg->bmp);
+	    vocabed->icondlg->icon);
 	if (rc != 0)
-		gfx_bmp_destroy(vocabed->icondlg->bmp);
+		icon_destroy(vocabed->icondlg->icon);
 
 	icondlg_destroy(vocabed->icondlg);
 	vocabed->icondlg = NULL;

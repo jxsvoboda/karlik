@@ -29,6 +29,7 @@
 #include <stdint.h>
 #include <string.h>
 #include "gfx.h"
+#include "icon.h"
 #include "icondict.h"
 #include "prog.h"
 
@@ -72,11 +73,11 @@ void icondict_destroy(icondict_t *icondict)
  *
  * @param icondict Icon dictionary
  * @param ident Identifier (will be duplicated)
- * @param icon Icon (ownershipt transferred to icon dictionary)
+ * @param icon Icon (ownership transferred to icon dictionary)
  *
  * @return Zero on success, ENOMEM if out of memory
  */
-int icondict_add(icondict_t *icondict, const char *ident, gfx_bmp_t *icon)
+int icondict_add(icondict_t *icondict, const char *ident, icon_t *icon)
 {
 	icondict_entry_t *entry;
 
@@ -104,7 +105,7 @@ void icondict_remove(icondict_entry_t *entry)
 {
 	list_remove(&entry->lidict);
 	free(entry->ident);
-	gfx_bmp_destroy(entry->icon);
+	icon_destroy(entry->icon);
 	free(entry);
 }
 
@@ -170,60 +171,24 @@ icondict_entry_t *icondict_find(icondict_t *icondict, const char *ident)
 static int icondict_entry_load(FILE *f, icondict_t *icondict)
 {
 	int rc;
-	int x, y;
-	int w, h;
-	int nitem;
 	char ident[prog_proc_id_len + 1];
-	gfx_bmp_t *bmp;
-	int c;
-	unsigned r, g, b;
+	icon_t *icon;
 
 	rc = prog_proc_load_ident(f, ident);
 	if (rc != 0)
 		return rc;
-	printf("ident='%s'\n", ident);
 
-	nitem = fscanf(f, "%d %d\n", &w, &h);
-	if (nitem != 2)
-		return EIO;
-
-	rc = gfx_bmp_create(w, h, &bmp);
+	rc = icon_load(f, &icon);
 	if (rc != 0)
 		return rc;
 
-	for (y = 0; y < h; y++) {
-		for (x = 0; x < w; x++) {
-			if (x > 0) {
-				c = fgetc(f);
-				if (c != ' ') {
-					rc = EIO;
-					goto error;
-				}
-			}
-
-			nitem = fscanf(f, "%u,%u,%u", &r, &g, &b);
-			if (nitem != 3) {
-				rc = EIO;
-				goto error;
-			}
-
-			gfx_bmp_set_pixel(bmp, x, y, r, g, b);
-		}
-
-		c = fgetc(f);
-		if (c != '\n') {
-			rc = EIO;
-			goto error;
-		}
-	}
-
-	rc = icondict_add(icondict, ident, bmp);
+	rc = icondict_add(icondict, ident, icon);
 	if (rc != 0)
 		goto error;
 
 	return 0;
 error:
-	gfx_bmp_destroy(bmp);
+	icon_destroy(icon);
 	return rc;
 }
 
@@ -271,31 +236,14 @@ error:
 static int icondict_entry_save(icondict_entry_t *entry, FILE *f)
 {
 	int rc;
-	int rv;
-	int x, y;
-	uint8_t r, g, b;
 
 	rc = prog_proc_save_ident(entry->ident, f);
 	if (rc != 0)
 		return rc;
 
-	rv = fprintf(f, "%d %d\n", entry->icon->w, entry->icon->h);
-	if (rv < 0)
-		return EIO;
-
-	for (y = 0; y < entry->icon->h; y++) {
-		for (x = 0; x < entry->icon->w; x++) {
-			gfx_bmp_get_pixel(entry->icon, x, y, &r, &g, &b);
-			rv = fprintf(f, "%s%u,%u,%u", x > 0 ? " " : "",
-			    r, g, b);
-			if (rv < 0)
-				return EIO;
-		}
-
-		rv = fputc('\n', f);
-		if (rv < 0)
-			return EIO;
-	}
+	rc = icon_save(entry->icon, f);
+	if (rc != 0)
+		return rc;
 
 	return 0;
 }

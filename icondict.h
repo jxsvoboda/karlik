@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include "adt/list.h"
 #include "gfx.h"
+#include "icon.h"
 
 /** Icon dictionary */
 typedef struct {
@@ -37,7 +38,7 @@ typedef struct {
 	/** Identifier */
 	char *ident;
 	/** Icon */
-	gfx_bmp_t *icon;
+	icon_t *icon;
 } icondict_entry_t;
 
 /** Icon dictionary */
@@ -48,7 +49,7 @@ typedef struct icondict {
 
 extern int icondict_create(icondict_t **);
 extern void icondict_destroy(icondict_t *);
-extern int icondict_add(icondict_t *, const char *, gfx_bmp_t *);
+extern int icondict_add(icondict_t *, const char *, icon_t *);
 extern void icondict_remove(icondict_entry_t *);
 extern icondict_entry_t *icondict_first(icondict_t *);
 extern icondict_entry_t *icondict_next(icondict_entry_t *);
