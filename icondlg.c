@@ -43,6 +43,36 @@ static canvas_cb_t icondlg_canvas_cb = {
 	.repaint = icondlg_canvas_repaint
 };
 
+static void icondlg_palette_selected(void *, int);
+
+/** Icon dialog palette callbacks */
+static palette_cb_t icondlg_palette_cb = {
+	.selected = icondlg_palette_selected
+};
+
+/** Palette colors */
+static uint8_t pal_colors[3 * pal_num_entries] = {
+	0, 0, 0, /* Black */
+	0, 12, 84, /* Dark blue */
+	0, 127, 14, /* Dark green */
+	59, 165, 197, /* Dark cyan */
+
+	156, 28, 20, /* Dark red */
+	127, 0, 110, /* Dark magenta */
+	156, 156, 108, /* Dark yellow */
+	160, 160, 160, /* Dark white */
+
+	72, 72, 72, /* Dark grey */
+	0, 148, 255, /* Light blue */
+	76, 255, 0, /* Light green */
+	0, 255, 255, /* Light cyan */
+
+	255, 0, 0, /* Light red */
+	255, 0, 220, /* Light magenta */
+	255, 216, 0, /* Light yellow */
+	255, 255, 255 /* White */
+};
+
 /** Create icon dialog.
  *
  * @param icon Icon
@@ -53,6 +83,7 @@ static canvas_cb_t icondlg_canvas_cb = {
 int icondlg_create(icon_t *icon, icondlg_t **ricondlg)
 {
 	icondlg_t *icondlg;
+	int i;
 	int rc;
 
 	icondlg = calloc(1, sizeof(icondlg_t));
@@ -64,6 +95,20 @@ int icondlg_create(icon_t *icon, icondlg_t **ricondlg)
 		free(icondlg);
 		return rc;
 	}
+
+	rc = palette_create(&icondlg->palette);
+	if (rc != 0) {
+		canvas_destroy(icondlg->canvas);
+		free(icondlg);
+		return rc;
+	}
+
+	for (i = 0; i < pal_num_entries; i++) {
+		palette_set_entry_color(icondlg->palette, i, pal_colors[3 * i],
+		    pal_colors[3 * i + 1], pal_colors[3 * i + 2]);
+	}
+
+	palette_set_cb(icondlg->palette, &icondlg_palette_cb, icondlg);
 
 	icondlg->icon = icon;
 	canvas_set_cb(icondlg->canvas, &icondlg_canvas_cb, icondlg);
@@ -78,6 +123,7 @@ int icondlg_create(icon_t *icon, icondlg_t **ricondlg)
  */
 void icondlg_destroy(icondlg_t *icondlg)
 {
+	palette_destroy(icondlg->palette);
 	canvas_destroy(icondlg->canvas);
 	free(icondlg);
 }
@@ -145,8 +191,17 @@ void icondlg_set_dims(icondlg_t *icondlg, int x, int y, int w, int h)
 	cy = icondlg->orig_y + icondlg->height / 2 -
 	    icondlg->icon->bmp->h * icon_mag / 2;
 
-	canvas_set_orig(icondlg->canvas, cx, cy);
+	canvas_set_orig(icondlg->canvas, cx, cy - 20);
 	canvas_set_mag(icondlg->canvas, icon_mag);
+
+	/* Center palette in the dialog window */
+	cx = icondlg->orig_x + icondlg->width / 2 -
+	    pal_cols * 12 / 2;
+	cy = icondlg->orig_y + icondlg->height / 2 -
+	    pal_rows * 12 / 2;
+
+	palette_set_orig(icondlg->palette, cx, cy + 50);
+	palette_set_entry_dims(icondlg->palette, 12, 12);
 }
 
 /** Set icon dialog callbacks.
@@ -179,6 +234,7 @@ void icondlg_draw(icondlg_t *icondlg, gfx_t *gfx)
 	    icondlg->width - 2, icondlg->height - 2, color);
 
 	canvas_draw(icondlg->canvas, gfx);
+	palette_draw(icondlg->palette, gfx);
 }
 
 /** Process input event in icon dialog.
@@ -192,6 +248,9 @@ bool icondlg_event(icondlg_t *icondlg, SDL_Event *event)
 	SDL_MouseButtonEvent *mbe;
 
 	if (canvas_event(icondlg->canvas, event))
+		return true;
+
+	if (palette_event(icondlg->palette, event))
 		return true;
 
 	if (event->type == SDL_MOUSEBUTTONDOWN) {
@@ -212,10 +271,33 @@ bool icondlg_event(icondlg_t *icondlg, SDL_Event *event)
  *
  * @param arg Argument (icondlg_t *)
  */
+static void icondlg_repaint_req(icondlg_t *icondlg)
+{
+	if (icondlg->cb != NULL && icondlg->cb->repaint != NULL)
+		icondlg->cb->repaint(icondlg->cb_arg);
+}
+
+/** Handle canvas repaint request in icon dialog.
+ *
+ * @param arg Argument (icondlg_t *)
+ */
 static void icondlg_canvas_repaint(void *arg)
 {
 	icondlg_t *icondlg = (icondlg_t *)arg;
 
-	if (icondlg->cb != NULL && icondlg->cb->repaint != NULL)
-		icondlg->cb->repaint(icondlg->cb_arg);
+	icondlg_repaint_req(icondlg);
+}
+
+/** Handle palette selected event in icon dialog.
+ *
+ * @param arg Argument (icondlg_t *)
+ * @param idx Selected palette index
+ */
+static void icondlg_palette_selected(void *arg, int idx)
+{
+	icondlg_t *icondlg = (icondlg_t *)arg;
+
+	canvas_set_drawing_color(icondlg->canvas, pal_colors[3 * idx],
+	    pal_colors[3 * idx + 1], pal_colors[3 * idx + 2]);
+	icondlg_repaint_req(icondlg);
 }

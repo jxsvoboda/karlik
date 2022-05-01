@@ -25,6 +25,7 @@
 
 #include <SDL.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include "gfx.h"
 
@@ -46,6 +47,12 @@ typedef struct {
 	int orig_y;
 	/** Magnification */
 	int mag;
+	/** Drawing color red component */
+	uint8_t drawing_clr_r;
+	/** Drawing color green component */
+	uint8_t drawing_clr_g;
+	/** Drawing color blue component */
+	uint8_t drawing_clr_b;
 	/** Mouse button held */
 	bool button_held;
 	/** Callbacks */
@@ -59,6 +66,7 @@ extern void canvas_destroy(canvas_t *);
 extern void canvas_set_orig(canvas_t *, int, int);
 extern void canvas_set_mag(canvas_t *, int);
 extern void canvas_set_cb(canvas_t *, canvas_cb_t *, void *);
+extern void canvas_set_drawing_color(canvas_t *, uint8_t, uint8_t, uint8_t);
 extern void canvas_draw(canvas_t *, gfx_t *);
 extern bool canvas_event(canvas_t *, SDL_Event *);
 

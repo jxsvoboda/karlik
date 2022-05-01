@@ -20,58 +20,60 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef ICONDLG_H
-#define ICONDLG_H
+#ifndef PALETTE_H
+#define PALETTE_H
 
 #include <SDL.h>
+#include <stdbool.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include "canvas.h"
 #include "gfx.h"
-#include "icon.h"
-#include "map.h"
-#include "palette.h"
-#include "robots.h"
 
-/** Icon dialog callbacks */
+enum {
+	pal_cols = 8,
+	pal_rows = 2,
+	pal_num_entries = pal_cols * pal_rows
+};
+
+/** Palette callbacks */
 typedef struct {
-	void (*accept)(void *);
-	void (*repaint)(void *);
-} icondlg_cb_t;
+	void (*selected)(void *arg, int);
+} palette_cb_t;
 
-/** Icon dialog
+/** Palette entry */
+typedef struct {
+	uint8_t r, g, b;
+} palette_entry_t;
+
+/** Palette
  *
- * Allows the user to select from a list of existing icons, to modify
- * it and finally to submit it.
+ * Palette control for selecting color
  */
 typedef struct {
-	/** Icon */
-	icon_t *icon;
-	/** Canvas */
-	canvas_t *canvas;
-	/** Palette */
-	palette_t *palette;
+	/** Color entries */
+	palette_entry_t entry[pal_num_entries];
 	/** X coordinate of top-left corner on the screen */
 	int orig_x;
 	/** Y coordinate of top-left corner on the screen */
 	int orig_y;
-	/** Width in pixels */
-	int width;
-	/** Height in pixels */
-	int height;
+	/** Palette entry width */
+	int entry_w;
+	/** Palette entry height */
+	int entry_h;
+	/** Index of selected entry */
+	int sel_idx;
 	/** Callbacks */
-	icondlg_cb_t *cb;
+	palette_cb_t *cb;
 	/** Callback argument */
 	void *cb_arg;
-} icondlg_t;
+} palette_t;
 
-extern int icondlg_create(icon_t *, icondlg_t **);
-extern void icondlg_destroy(icondlg_t *);
-extern int icondlg_load(FILE *, icondlg_t **);
-extern int icondlg_save(icondlg_t *, FILE *);
-extern void icondlg_set_dims(icondlg_t *, int, int, int, int);
-extern void icondlg_set_cb(icondlg_t *, icondlg_cb_t *, void *);
-extern void icondlg_draw(icondlg_t *, gfx_t *);
-extern bool icondlg_event(icondlg_t *, SDL_Event *);
+extern int palette_create(palette_t **);
+extern void palette_destroy(palette_t *);
+extern void palette_set_orig(palette_t *, int, int);
+extern void palette_set_entry_dims(palette_t *, int, int);
+extern void palette_set_entry_color(palette_t *, int, uint8_t, uint8_t, uint8_t);
+extern void palette_set_cb(palette_t *, palette_cb_t *, void *);
+extern void palette_draw(palette_t *, gfx_t *);
+extern bool palette_event(palette_t *, SDL_Event *);
 
 #endif

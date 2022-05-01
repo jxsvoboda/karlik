@@ -61,6 +61,7 @@ void canvas_destroy(canvas_t *canvas)
 
 /** Set canvas origin.
  *
+ * @param canvas Canvas
  * @param x X origin
  * @param y Y origin
  */
@@ -72,6 +73,7 @@ void canvas_set_orig(canvas_t *canvas, int x, int y)
 
 /** Set canvas magnification.
  *
+ * @param canvas Canvas
  * @param mag Magnification
  */
 void canvas_set_mag(canvas_t *canvas, int mag)
@@ -91,6 +93,21 @@ void canvas_set_cb(canvas_t *canvas, canvas_cb_t *cb, void *arg)
 	canvas->cb_arg = arg;
 }
 
+/** Set canvas drawing color.
+ *
+ * @param canvas Canvas
+ * @param r Red
+ * @param g Green
+ * @param b Blue
+ */
+void canvas_set_drawing_color(canvas_t *canvas, uint8_t r, uint8_t g,
+    uint8_t b)
+{
+	canvas->drawing_clr_r = r;
+	canvas->drawing_clr_g = g;
+	canvas->drawing_clr_b = b;
+}
+
 /** Draw canvas.
  *
  * @param canvas Canvas
@@ -101,6 +118,11 @@ void canvas_draw(canvas_t *canvas, gfx_t *gfx)
 	uint8_t r, g, b;
 	uint32_t color;
 	int x, y;
+
+	color = gfx_rgb(gfx, 108, 108, 108);
+	gfx_rect(gfx, canvas->orig_x - 1, canvas->orig_y - 1,
+	    canvas->bmp->w * canvas->mag + 2,
+	    canvas->bmp->h * canvas->mag + 2, color);
 
 	for (y = 0; y < canvas->bmp->h; y++) {
 		for (x = 0; x < canvas->bmp->w; x++) {
@@ -133,7 +155,10 @@ bool canvas_event(canvas_t *canvas, SDL_Event *event)
 		y = (mbe->y - canvas->orig_y) / canvas->mag;
 		if (x >= 0 && y >= 0 && x < canvas->bmp->w &&
 		    y < canvas->bmp->h) {
-			gfx_bmp_set_pixel(canvas->bmp, x, y, 80, 160, 240);
+			gfx_bmp_set_pixel(canvas->bmp, x, y,
+			    canvas->drawing_clr_r,
+			    canvas->drawing_clr_g,
+			    canvas->drawing_clr_b);
 			if (canvas->cb != NULL && canvas->cb->repaint != NULL)
 				canvas->cb->repaint(canvas->cb_arg);
 			return true;
@@ -147,7 +172,10 @@ bool canvas_event(canvas_t *canvas, SDL_Event *event)
 		y = (mme->y - canvas->orig_y) / canvas->mag;
 		if (x >= 0 && y >= 0 && x < canvas->bmp->w &&
 		    y < canvas->bmp->h) {
-			gfx_bmp_set_pixel(canvas->bmp, x, y, 80, 160, 240);
+			gfx_bmp_set_pixel(canvas->bmp, x, y,
+			    canvas->drawing_clr_r,
+			    canvas->drawing_clr_g,
+			    canvas->drawing_clr_b);
 			if (canvas->cb != NULL && canvas->cb->repaint != NULL)
 				canvas->cb->repaint(canvas->cb_arg);
 			return true;

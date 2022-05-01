@@ -42,6 +42,10 @@ enum {
 	proc_icon_width = 16,
 	proc_icon_height = 16,
 
+	proc_icon_bg_r = 72,
+	proc_icon_bg_g = 72,
+	proc_icon_bg_b = 72,
+
 	orig_x = 320,
 	orig_y = 240
 };
@@ -740,11 +744,19 @@ static void vocabed_setup_icon_dlg(vocabed_t *vocabed)
 static void vocabed_open_icon_dlg(vocabed_t *vocabed)
 {
 	icon_t *icon;
+	int x, y;
 	int rc;
 
 	rc = icon_create(proc_icon_width, proc_icon_height, &icon);
 	if (rc != 0)
 		return;
+
+	for (y = 0; y < proc_icon_height; y++) {
+		for (x = 0; x < proc_icon_width; x++) {
+			gfx_bmp_set_pixel(icon->bmp, x, y, proc_icon_bg_r,
+			    proc_icon_bg_g, proc_icon_bg_b);
+		}
+	}
 
 	/* Open icon dialog */
 	rc = icondlg_create(icon, &vocabed->icondlg);

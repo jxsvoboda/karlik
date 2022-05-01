@@ -40,6 +40,7 @@ sources = \
 	map.c \
 	mapedit.c \
 	mapview.c \
+	palette.c \
 	prog.c \
 	progview.c \
 	robot.c \
