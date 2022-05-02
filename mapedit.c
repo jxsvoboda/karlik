@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Jiri Svoboda
+ * Copyright 2022 Jiri Svoboda
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * copy of this software and associated documentation files (the "Software"),
@@ -223,6 +223,11 @@ int mapedit_save(mapedit_t *mapedit, FILE *f)
 	return 0;
 }
 
+/** Handle key press in map editor.
+ *
+ * @param mapedit Map editor
+ * @param scancode Scan code
+ */
 static void mapedit_key_press(mapedit_t *mapedit, SDL_Scancode scancode)
 {
 	(void) mapedit;
@@ -233,6 +238,12 @@ static void mapedit_key_press(mapedit_t *mapedit, SDL_Scancode scancode)
 	}
 }
 
+/** Handle event in map editor.
+ *
+ * @param mapedit Map editor
+ * @param e Event
+ * @param gfx Graphics
+ */
 void mapedit_event(mapedit_t *mapedit, SDL_Event *e, gfx_t *gfx)
 {
 	SDL_KeyboardEvent *ke;

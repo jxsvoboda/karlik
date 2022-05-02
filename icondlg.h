@@ -51,6 +51,8 @@ typedef struct {
 	canvas_t *canvas;
 	/** Palette */
 	palette_t *palette;
+	/** OK icon */
+	gfx_bmp_t *ok_icon;
 	/** X coordinate of top-left corner on the screen */
 	int orig_x;
 	/** Y coordinate of top-left corner on the screen */
@@ -65,9 +67,9 @@ typedef struct {
 	void *cb_arg;
 } icondlg_t;
 
-extern int icondlg_create(icon_t *, icondlg_t **);
+extern int icondlg_create(icon_t *, gfx_bmp_t *, icondlg_t **);
 extern void icondlg_destroy(icondlg_t *);
-extern int icondlg_load(FILE *, icondlg_t **);
+extern int icondlg_load(FILE *, gfx_bmp_t *, icondlg_t **);
 extern int icondlg_save(icondlg_t *, FILE *);
 extern void icondlg_set_dims(icondlg_t *, int, int, int, int);
 extern void icondlg_set_cb(icondlg_t *, icondlg_cb_t *, void *);

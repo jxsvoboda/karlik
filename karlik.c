@@ -335,18 +335,6 @@ void karlik_event(karlik_t *karlik, SDL_Event *e, gfx_t *gfx)
 	SDL_KeyboardEvent *ke;
 	SDL_MouseButtonEvent *me;
 
-	if (toolbar_event(karlik->main_tb, e))
-		return;
-
-	switch (karlik->kmode) {
-	case km_map:
-		(void) mapedit_event(karlik->mapedit, e, gfx);
-		break;
-	case km_vocab:
-		(void) vocabed_event(karlik->vocabed, e, gfx);
-		break;
-	}
-
 	switch (e->type) {
 	case SDL_QUIT:
 		karlik->quit = true;
@@ -364,6 +352,19 @@ void karlik_event(karlik_t *karlik, SDL_Event *e, gfx_t *gfx)
 		(void) me;
 		break;
 	}
+
+	switch (karlik->kmode) {
+	case km_map:
+		(void) mapedit_event(karlik->mapedit, e, gfx);
+		break;
+	case km_vocab:
+		if (vocabed_event(karlik->vocabed, e, gfx))
+			return;
+		break;
+	}
+
+	if (toolbar_event(karlik->main_tb, e))
+		return;
 }
 
 /** Main toolbar callback.

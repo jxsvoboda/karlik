@@ -76,11 +76,12 @@ static uint8_t pal_colors[3 * pal_num_entries] = {
 /** Create icon dialog.
  *
  * @param icon Icon
+ * @param ok_icon OK icon
  * @param ricondlg Place to store pointer to new icon dialog
  *
  * @return Zero on success or error code
  */
-int icondlg_create(icon_t *icon, icondlg_t **ricondlg)
+int icondlg_create(icon_t *icon, gfx_bmp_t *ok_icon, icondlg_t **ricondlg)
 {
 	icondlg_t *icondlg;
 	int i;
@@ -111,6 +112,7 @@ int icondlg_create(icon_t *icon, icondlg_t **ricondlg)
 	palette_set_cb(icondlg->palette, &icondlg_palette_cb, icondlg);
 
 	icondlg->icon = icon;
+	icondlg->ok_icon = ok_icon;
 	canvas_set_cb(icondlg->canvas, &icondlg_canvas_cb, icondlg);
 
 	*ricondlg = icondlg;
@@ -131,10 +133,11 @@ void icondlg_destroy(icondlg_t *icondlg)
 /** Load icon dialog from file.
  *
  * @param f File
+ * @param ok_icon OK icon
  * @param ricondlg Place to store pointer to new icon dialog
  * @return Zero on success or an error code
  */
-int icondlg_load(FILE *f, icondlg_t **ricondlg)
+int icondlg_load(FILE *f, gfx_bmp_t *ok_icon, icondlg_t **ricondlg)
 {
 	icon_t *icon;
 	int rc;
@@ -143,7 +146,7 @@ int icondlg_load(FILE *f, icondlg_t **ricondlg)
 	if (rc != 0)
 		return rc;
 
-	rc = icondlg_create(icon, ricondlg);
+	rc = icondlg_create(icon, ok_icon, ricondlg);
 	if (rc != 0) {
 		icon_destroy(icon);
 		return rc;
@@ -224,6 +227,7 @@ void icondlg_set_cb(icondlg_t *icondlg, icondlg_cb_t *cb, void *arg)
 void icondlg_draw(icondlg_t *icondlg, gfx_t *gfx)
 {
 	uint32_t color;
+	int x, y;
 
 	color = gfx_rgb(gfx, 0, 255, 255);
 	gfx_rect(gfx, icondlg->orig_x, icondlg->orig_y,
@@ -235,6 +239,14 @@ void icondlg_draw(icondlg_t *icondlg, gfx_t *gfx)
 
 	canvas_draw(icondlg->canvas, gfx);
 	palette_draw(icondlg->palette, gfx);
+
+	x = icondlg->orig_x + icondlg->width - icondlg->ok_icon->w - 10;
+	y = icondlg->orig_y + icondlg->height - icondlg->ok_icon->h - 10;
+
+	color = gfx_rgb(gfx, 108, 108, 108);
+	gfx_rect(gfx, x - 1, y - 1, icondlg->ok_icon->w + 2,
+	    icondlg->ok_icon->h + 2, color);
+	gfx_bmp_render(gfx, icondlg->ok_icon, x, y);
 }
 
 /** Process input event in icon dialog.
@@ -246,6 +258,7 @@ void icondlg_draw(icondlg_t *icondlg, gfx_t *gfx)
 bool icondlg_event(icondlg_t *icondlg, SDL_Event *event)
 {
 	SDL_MouseButtonEvent *mbe;
+	int x, y;
 
 	if (canvas_event(icondlg->canvas, event))
 		return true;
@@ -255,16 +268,20 @@ bool icondlg_event(icondlg_t *icondlg, SDL_Event *event)
 
 	if (event->type == SDL_MOUSEBUTTONDOWN) {
 		mbe = (SDL_MouseButtonEvent *)event;
-		if (mbe->x >= icondlg->orig_x && mbe->y >= icondlg->orig_y &&
-		    mbe->x < icondlg->orig_x + icondlg->width &&
-		    mbe->y < icondlg->orig_y + icondlg->height) {
+		x = icondlg->orig_x + icondlg->width - icondlg->ok_icon->w - 10;
+		y = icondlg->orig_y + icondlg->height - icondlg->ok_icon->h - 10;
+
+		if (mbe->x >= x && mbe->y >= y &&
+		    mbe->x < x + icondlg->ok_icon->w &&
+		    mbe->y < y + icondlg->ok_icon->h) {
 			if (icondlg->cb != NULL && icondlg->cb->accept != NULL)
 				icondlg->cb->accept(icondlg->cb_arg);
 			return true;
 		}
 	}
 
-	return false;
+	/* This is a modal dialog. Block everything else. */
+	return true;
 }
 
 /** Handle canvas repaint request in icon dialog.

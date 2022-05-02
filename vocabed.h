@@ -113,6 +113,8 @@ typedef struct {
 	gfx_bmp_t *verb_icons[verb_limit];
 	/** Error icons */
 	gfx_bmp_t *error_icons[errt_limit];
+	/** OK icon */
+	gfx_bmp_t *ok_icon;
 	/** Callback argument */
 	void *arg;
 } vocabed_t;
@@ -125,6 +127,6 @@ extern int vocabed_load(map_t *, robots_t *, prog_module_t *, FILE *,
 extern void vocabed_destroy(vocabed_t *);
 extern void vocabed_display(vocabed_t *, gfx_t *gfx);
 extern int vocabed_save(vocabed_t *, FILE *);
-extern void vocabed_event(vocabed_t *, SDL_Event *, gfx_t *);
+extern bool vocabed_event(vocabed_t *, SDL_Event *, gfx_t *);
 
 #endif

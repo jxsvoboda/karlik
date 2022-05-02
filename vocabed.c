@@ -70,6 +70,9 @@ static const char *vocabed_tb_files[] = {
 	NULL
 };
 
+/** OK icon file */
+static const char *ok_icon_file = "img/ok.bmp";
+
 /** Verbs corresponding to intrinsic statements */
 static const vocabed_verb_type_t intrinsic_verbs[] = {
 	verb_move,
@@ -341,6 +344,10 @@ static int vocabed_create(map_t *map, robots_t *robots, prog_module_t *prog,
 		++i;
 	}
 
+	rc = gfx_bmp_load(ok_icon_file, &vocabed->ok_icon);
+	if (rc != 0)
+		goto error;
+
 	vocabed->cb = cb;
 	vocabed->arg = arg;
 
@@ -490,7 +497,7 @@ int vocabed_load(map_t *map, robots_t *robots, prog_module_t *prog, FILE *f,
 	/* Icon dialog should be open? */
 	if (have_icon_dialog != 0) {
 		printf("Load icon dialog..\n");
-		rc = icondlg_load(f, &vocabed->icondlg);
+		rc = icondlg_load(f, vocabed->ok_icon, &vocabed->icondlg);
 		if (rc != 0)
 			goto error;
 
@@ -587,8 +594,9 @@ static void vocabed_key_press(vocabed_t *vocabed, SDL_Scancode scancode)
  * @param vocabed Vocabulary editor
  * @param e Event
  * @param gfx Graphics
+ * @return @c true iff event is claimed
  */
-void vocabed_event(vocabed_t *vocabed, SDL_Event *e, gfx_t *gfx)
+bool vocabed_event(vocabed_t *vocabed, SDL_Event *e, gfx_t *gfx)
 {
 	SDL_KeyboardEvent *ke;
 	SDL_MouseButtonEvent *me;
@@ -597,19 +605,21 @@ void vocabed_event(vocabed_t *vocabed, SDL_Event *e, gfx_t *gfx)
 
 	if (vocabed->errordlg != NULL) {
 		if (errordlg_event(vocabed->errordlg, e))
-			return;
+			return true;
 	}
 
 	if (vocabed->icondlg != NULL) {
 		if (icondlg_event(vocabed->icondlg, e))
-			return;
+			return true;
 	}
 
 	if (toolbar_event(vocabed->tb, e))
-		return;
+		return true;
 
-	(void) mapview_event(vocabed->mapview, e);
-	(void) wordlist_event(vocabed->verbs, e);
+	if (mapview_event(vocabed->mapview, e))
+		return true;
+	if (wordlist_event(vocabed->verbs, e))
+		return true;
 
 	switch (e->type) {
 	case SDL_KEYDOWN:
@@ -621,6 +631,8 @@ void vocabed_event(vocabed_t *vocabed, SDL_Event *e, gfx_t *gfx)
 		(void) me;
 		break;
 	}
+
+	return false;
 }
 
 /** Start learning a new procedure.
@@ -759,7 +771,7 @@ static void vocabed_open_icon_dlg(vocabed_t *vocabed)
 	}
 
 	/* Open icon dialog */
-	rc = icondlg_create(icon, &vocabed->icondlg);
+	rc = icondlg_create(icon, vocabed->ok_icon, &vocabed->icondlg);
 	if (rc != 0) {
 		icon_destroy(icon);
 		return;
@@ -1015,5 +1027,7 @@ void vocabed_destroy(vocabed_t *vocabed)
 		progview_destroy(vocabed->progview);
 	if (vocabed->verbs != NULL)
 		wordlist_destroy(vocabed->verbs);
+	if (vocabed->ok_icon != NULL)
+		gfx_bmp_destroy(vocabed->ok_icon);
 	free(vocabed);
 }
