@@ -47,7 +47,9 @@ enum {
 	proc_icon_bg_b = 72,
 
 	orig_x = 320,
-	orig_y = 240
+	orig_y = 240,
+
+	prog_step_interval = 500
 };
 
 /** Verb icon files */
@@ -109,6 +111,8 @@ static void vocabed_work_verb_selected(void *, void *);
 static void vocabed_learn_verb_selected(void *, void *);
 static void vocabed_examine_verb_selected(void *, void *);
 static void vocabed_verb_destroy(void *, void *);
+
+static void vocabed_robots_step(void *);
 
 static wordlist_cb_t vocabed_work_verbs_cb = {
 	.selected = vocabed_work_verb_selected,
@@ -287,6 +291,11 @@ static int vocabed_create(map_t *map, robots_t *robots, prog_module_t *prog,
 	vocabed = calloc(1, sizeof(vocabed_t));
 	if (vocabed == NULL)
 		return ENOMEM;
+
+	rc = gfx_timer_create(prog_step_interval, vocabed_robots_step,
+	    vocabed, &vocabed->robot_timer);
+	if (rc != 0)
+		goto error;
 
 	rc = icondict_create(&vocabed->icondict);
 	if (rc != 0)
@@ -780,7 +789,48 @@ static void vocabed_open_icon_dlg(vocabed_t *vocabed)
 	vocabed_setup_icon_dlg(vocabed);
 }
 
-/** Vocabulary editor immeadite mode verbs callback.
+static void vocabed_robots_step(void *arg)
+{
+	vocabed_t *vocabed = (vocabed_t *)arg;
+	robot_t *robot;
+	bool active = false;
+	robot_error_t error = errt_none;
+
+	robot = robots_first(vocabed->robots);
+	while (robot != NULL) {
+		if (robot_is_busy(robot) && robot_error(robot) ==
+		    errt_none) {
+			robot_step(robot);
+			active = true;
+			if (robot_error(robot) != errt_none)
+				error = robot_error(robot);
+		}
+
+		robot = robots_next(robot);
+	}
+
+	if (active)
+		vocabed_repaint_req(vocabed);
+	else
+		gfx_timer_stop(vocabed->robot_timer);
+
+	if (error != errt_none) {
+		gfx_timer_stop(vocabed->robot_timer);
+		vocabed_open_error_dlg(vocabed, error);
+		vocabed_repaint_req(vocabed);
+	}
+}
+
+/** Start robot timer.
+ *
+ * This starts moving the robots.
+ */
+void vocabed_start_robots(vocabed_t *vocabed)
+{
+	gfx_timer_start(vocabed->robot_timer);
+}
+
+/** Vocabulary editor immediate mode verbs callback.
  *
  * Called when a verb is selected in work mode.
  *
@@ -800,8 +850,8 @@ static void vocabed_work_verb_selected(void *arg, void *earg)
 
 	robot = robots_first(vocabed->robots);
 	while (robot != NULL) {
-		/* Clear error flag so that robot can continue. */
-		robot_clear_error(robot);
+		/* Reset robot before starting new program. */
+		robot_reset(robot);
 
 		switch (verb->vtype) {
 		case verb_move:
@@ -824,10 +874,8 @@ static void vocabed_work_verb_selected(void *arg, void *earg)
 			break;
 		case verb_call:
 			robot_run_proc(robot, verb->v.vcall.proc);
-			while (robot_is_busy(robot) && robot_error(robot) ==
-			    errt_none) {
-				robot_step(robot);
-			}
+			vocabed_start_robots(vocabed);
+			break;
 		default:
 			break;
 		}
@@ -1021,6 +1069,8 @@ void vocabed_destroy(vocabed_t *vocabed)
 {
 	unsigned i;
 
+	if (vocabed->robot_timer != NULL)
+		gfx_timer_destroy(vocabed->robot_timer);
 	if (vocabed->icondict != NULL)
 		icondict_destroy(vocabed->icondict);
 	if (vocabed->mapview != NULL)

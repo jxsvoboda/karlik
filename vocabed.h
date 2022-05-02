@@ -91,6 +91,8 @@ typedef struct {
 	wordlist_t *verbs;
 	/** Robots */
 	robots_t *robots;
+	/** Robot execution timer */
+	gfx_timer_t *robot_timer;
 	/** Program module */
 	prog_module_t *prog;
 	/** Procedure currently learning */

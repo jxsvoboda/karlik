@@ -351,6 +351,9 @@ void karlik_event(karlik_t *karlik, SDL_Event *e, gfx_t *gfx)
 		me = (SDL_MouseButtonEvent *) e;
 		(void) me;
 		break;
+	case SDL_USEREVENT:
+		gfx_handle_user_event(e);
+		break;
 	}
 
 	switch (karlik->kmode) {

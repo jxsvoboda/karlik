@@ -78,7 +78,7 @@ extern void robot_pick_up(robot_t *);
 extern int robot_run_proc(robot_t *, prog_proc_t *);
 extern int robot_is_busy(robot_t *);
 extern robot_error_t robot_error(robot_t *);
-extern void robot_clear_error(robot_t *);
+extern void robot_reset(robot_t *);
 extern int robot_step(robot_t *);
 
 #endif

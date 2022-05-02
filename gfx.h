@@ -37,6 +37,16 @@ typedef struct {
 	int h;
 } gfx_bmp_t;
 
+/** Timer function */
+typedef void (*gfx_timer_func_t)(void *);
+
+typedef struct {
+	SDL_TimerID id;
+	gfx_timer_func_t func;
+	uint32_t interval;
+	void *arg;
+} gfx_timer_t;
+
 extern int gfx_init(gfx_t *, bool);
 extern void gfx_quit(gfx_t *);
 extern void gfx_clear(gfx_t *);
@@ -54,5 +64,10 @@ extern void gfx_set_wnd_icon(gfx_t *, gfx_bmp_t *);
 
 extern void gfx_update(gfx_t *);
 extern int gfx_wait_event(SDL_Event *);
+extern int gfx_timer_create(uint32_t, gfx_timer_func_t, void *, gfx_timer_t **);
+extern void gfx_timer_destroy(gfx_timer_t *);
+extern void gfx_timer_start(gfx_timer_t *);
+extern void gfx_timer_stop(gfx_timer_t *);
+extern void gfx_handle_user_event(SDL_Event *);
 
 #endif

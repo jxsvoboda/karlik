@@ -260,13 +260,14 @@ robot_error_t robot_error(robot_t *robot)
 	return robot->error;
 }
 
-/** Clear robot error.
+/** Clear robot error and run state.
  *
  * @param robot Robot
  */
-void robot_clear_error(robot_t *robot)
+void robot_reset(robot_t *robot)
 {
 	robot->error = errt_none;
+	robot->cur_stmt = NULL;
 }
 
 /** Step intrinsic statement.

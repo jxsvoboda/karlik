@@ -29,6 +29,8 @@
 #include <stdbool.h>
 #include "gfx.h"
 
+static uint32_t gfx_timer_callback(uint32_t, void *);
+
 /** Initialize graphics.
  *
  * @param gfx Graphics object to initialize
@@ -40,7 +42,7 @@ int gfx_init(gfx_t *gfx, bool fullscreen)
 	SDL_Surface *surf;
 	SDL_Rect rect;
 
-	rc = SDL_Init(SDL_INIT_VIDEO);
+	rc = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER);
 	if (rc != 0)
 		return -1;
 
@@ -328,4 +330,125 @@ int gfx_wait_event(SDL_Event *e)
 	}
 
 	return 1;
+}
+
+/** Create a periodic timer.
+ *
+ * Creates a timer that fires regularly after a number of milisceonds.
+ * The timer function is executed within the main thread as part of
+ * event processing, avoiding the need for explicit synchronization.
+ *
+ * The timer continues to be executed periodically until it is destroyed.
+ *
+ * @param interval Execution interval in miliseconds
+ * @param func Timer function
+ * @param arg Timer function argument
+ * @param rtimer Place to store pointer to new timer
+ */
+int gfx_timer_create(uint32_t interval, gfx_timer_func_t func, void *arg,
+    gfx_timer_t **rtimer)
+{
+	gfx_timer_t *timer;
+
+	timer = calloc(1, sizeof(gfx_timer_t));
+	if (timer == NULL)
+		return ENOMEM;
+
+	timer->func = func;
+	timer->arg = arg;
+	timer->interval = interval;
+	*rtimer = timer;
+	return 0;
+}
+
+/** Destroy timer.
+ *
+ * This function cannot be called from within the timer function.
+ *
+ * @param timer Timer
+ */
+void gfx_timer_destroy(gfx_timer_t *timer)
+{
+	gfx_timer_stop(timer);
+	free(timer);
+}
+
+/** Start timer.
+ *
+ * @param timer Timer
+ */
+void gfx_timer_start(gfx_timer_t *timer)
+{
+	if (timer->id == 0) {
+		timer->id = SDL_AddTimer(timer->interval, gfx_timer_callback,
+		    (void *)timer);
+	}
+}
+
+static int gfx_userevent_filter(void *arg, SDL_Event *event)
+{
+	gfx_timer_t *timer = (gfx_timer_t *)arg;
+
+	/* Remove events pertaining to @a timer */
+	if (event->type == SDL_USEREVENT && event->user.code == 0 &&
+	    event->user.data1 == timer)
+		return 0;
+
+	/* Do not remove other events */
+	return 1;
+}
+
+/** Stop timer.
+ *
+ * @param timer Timer
+ */
+void gfx_timer_stop(gfx_timer_t *timer)
+{
+	/* Stop SDL timer */
+	if (timer->id != 0) {
+		(void) SDL_RemoveTimer(timer->id);
+		timer->id = 0;
+	}
+
+	/* Remove user events pertaining to this timer */
+	SDL_FilterEvents(gfx_userevent_filter, timer);
+}
+
+/** Timer callback function.
+ *
+ * @param interval Interval
+ * @param param Parameter (gfx_timer_t *)
+ * @return Next interval
+ */
+static uint32_t gfx_timer_callback(uint32_t interval, void *param)
+{
+	gfx_timer_t *timer = (gfx_timer_t *)param;
+	SDL_Event event;
+
+	/*
+	 * Deliver the timer via a user event. This ensures
+	 * the timer is handled in the main thread, preventing
+	 * the need for explicit synchronization.
+	 */
+
+	event.type = SDL_USEREVENT;
+	event.user.code = 0;
+	event.user.data1 = timer;
+	event.user.data2 = 0;
+
+	SDL_PushEvent(&event);
+
+	/* Set next interval */
+	return timer->interval;
+}
+
+void gfx_handle_user_event(SDL_Event *event)
+{
+	gfx_timer_t *timer;
+
+	if (event->type != SDL_USEREVENT || event->user.code != 0)
+		return;
+
+	timer = (gfx_timer_t *)event->user.data1;
+	(*timer->func)(timer->arg);
 }
