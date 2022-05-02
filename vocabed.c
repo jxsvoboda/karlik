@@ -1019,6 +1019,8 @@ static void vocabed_icondlg_repaint(void *arg)
  */
 void vocabed_destroy(vocabed_t *vocabed)
 {
+	unsigned i;
+
 	if (vocabed->icondict != NULL)
 		icondict_destroy(vocabed->icondict);
 	if (vocabed->mapview != NULL)
@@ -1029,5 +1031,11 @@ void vocabed_destroy(vocabed_t *vocabed)
 		wordlist_destroy(vocabed->verbs);
 	if (vocabed->ok_icon != NULL)
 		gfx_bmp_destroy(vocabed->ok_icon);
+	for (i = 0; i < verb_limit; i++)
+		if (vocabed->verb_icons[i] != NULL)
+			gfx_bmp_destroy(vocabed->verb_icons[i]);
+	for (i = 0; i < errt_limit; i++)
+		if (vocabed->error_icons[i] != NULL)
+			gfx_bmp_destroy(vocabed->error_icons[i]);
 	free(vocabed);
 }
