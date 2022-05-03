@@ -57,6 +57,8 @@ typedef struct {
 	dir_t dir;
 	/** Current statement or @c NULL if not executing code */
 	prog_stmt_t *cur_stmt;
+	/** Current procedure */
+	prog_proc_t *cur_proc;
 	/** Was robot stopped due to error? */
 	robot_error_t error;
 } robot_t;
@@ -80,5 +82,7 @@ extern int robot_is_busy(robot_t *);
 extern robot_error_t robot_error(robot_t *);
 extern void robot_reset(robot_t *);
 extern int robot_step(robot_t *);
+extern prog_proc_t *robot_cur_proc(robot_t *);
+extern prog_stmt_t *robot_cur_stmt(robot_t *);
 
 #endif

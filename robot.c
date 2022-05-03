@@ -236,6 +236,7 @@ int robot_run_proc(robot_t *robot, prog_proc_t *proc)
 	if (robot->cur_stmt != NULL || robot->error)
 		return EBUSY;
 
+	robot->cur_proc = proc;
 	robot->cur_stmt = prog_block_first(proc->body);
 	return 0;
 }
@@ -304,6 +305,8 @@ static void robot_stmt_intrinsic(robot_t *robot)
 		return;
 
 	robot->cur_stmt = prog_block_next(robot->cur_stmt);
+	if (robot->cur_stmt == NULL)
+		robot->cur_proc = NULL;
 }
 
 /** Advance one step in robot execution.
@@ -327,4 +330,24 @@ int robot_step(robot_t *robot)
 	}
 
 	return 0;
+}
+
+/** Return current procedure.
+ *
+ * @param robot Robot
+ * @return Procedure currently being executed
+ */
+prog_proc_t *robot_cur_proc(robot_t *robot)
+{
+	return robot->cur_proc;
+}
+
+/** Return current statement.
+ *
+ * @param robot Robot
+ * @return Current statement
+ */
+prog_stmt_t *robot_cur_stmt(robot_t *robot)
+{
+	return robot->cur_stmt;
 }

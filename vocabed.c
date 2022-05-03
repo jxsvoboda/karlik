@@ -809,6 +809,12 @@ static void vocabed_robots_step(void *arg)
 		robot = robots_next(robot);
 	}
 
+	robot = robots_first(vocabed->robots);
+	if (robot != NULL) {
+		progview_set_proc(vocabed->progview, robot_cur_proc(robot));
+		progview_set_hgl_stmt(vocabed->progview, robot_cur_stmt(robot));
+	}
+
 	if (active)
 		vocabed_repaint_req(vocabed);
 	else
@@ -827,6 +833,14 @@ static void vocabed_robots_step(void *arg)
  */
 void vocabed_start_robots(vocabed_t *vocabed)
 {
+	robot_t *robot;
+
+	robot = robots_first(vocabed->robots);
+	if (robot != NULL) {
+		progview_set_proc(vocabed->progview, robot_cur_proc(robot));
+		progview_set_hgl_stmt(vocabed->progview, robot_cur_stmt(robot));
+	}
+
 	gfx_timer_start(vocabed->robot_timer);
 }
 

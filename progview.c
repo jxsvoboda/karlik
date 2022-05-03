@@ -122,6 +122,16 @@ void progview_set_proc(progview_t *progview, prog_proc_t *proc)
 	progview->proc = proc;
 }
 
+/** Set which statement should be highlighted.
+ *
+ * @param progview Program view
+ * @param hgl_stmt Highlighted statement or @c NULL
+ */
+void progview_set_hgl_stmt(progview_t *progview, prog_stmt_t *stmt)
+{
+	progview->hgl_stmt = stmt;
+}
+
 /** Get the displayed procedure.
  *
  * @param progview Program view
@@ -143,6 +153,7 @@ void progview_draw(progview_t *progview, gfx_t *gfx)
 	int dx, dy;
 	prog_proc_t *proc;
 	prog_stmt_t *stmt;
+	uint32_t color;
 
 	proc = progview->proc;
 	if (proc == NULL)
@@ -159,6 +170,12 @@ void progview_draw(progview_t *progview, gfx_t *gfx)
 		    y * progview->icon_h;
 
 		if (stmt->stype == progst_intrinsic) {
+			if (stmt == progview->hgl_stmt) {
+				color = gfx_rgb(gfx, 0, 255, 255);
+				gfx_rect(gfx, dx - 1, dy - 1,
+				    progview->icon_w + 2, progview->icon_h + 2,
+				    color);
+			}
 			gfx_bmp_render(gfx,
 			    progview->intr_img[stmt->s.sintr.itype], dx, dy);
 		}

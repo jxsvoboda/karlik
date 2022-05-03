@@ -41,6 +41,8 @@ typedef struct {
 typedef struct {
 	/** Program procedure */
 	prog_proc_t *proc;
+	/** Highlighted statement */
+	prog_stmt_t *hgl_stmt;
 	/** X coordinate of top-left corner on the screen */
 	int orig_x;
 	/** Y coordinate of top-left corner on the screen */
@@ -66,6 +68,7 @@ extern void progview_destroy(progview_t *);
 extern void progview_set_orig(progview_t *, int, int);
 extern void progview_set_cb(progview_t *, progview_cb_t *, void *);
 extern void progview_set_proc(progview_t *, prog_proc_t *);
+extern void progview_set_hgl_stmt(progview_t *, prog_stmt_t *);
 extern prog_proc_t *progview_get_proc(progview_t *);
 extern void progview_draw(progview_t *, gfx_t *);
 extern bool progview_event(progview_t *, SDL_Event *);
