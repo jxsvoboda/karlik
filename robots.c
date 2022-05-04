@@ -27,6 +27,7 @@
 #include <assert.h>
 #include <errno.h>
 #include "dir.h"
+#include "prog.h"
 #include "robot.h"
 #include "robots.h"
 
@@ -34,12 +35,13 @@ static void robots_add_robot(robots_t *, robot_t *);
 
 /** Create robots.
  *
+ * @param prog Program module used by robots
  * @param map Map used by robots
  * @param rrobots Place to store pointer to new robots
  *
  * @return Zero on success or error code
  */
-int robots_create(map_t *map, robots_t **rrobots)
+int robots_create(prog_module_t *prog, map_t *map, robots_t **rrobots)
 {
 	robots_t *robots;
 
@@ -49,6 +51,7 @@ int robots_create(map_t *map, robots_t **rrobots)
 
 	list_initialize(&robots->robots);
 	list_initialize(&robots->dorder);
+	robots->prog = prog;
 	robots->map = map;
 	*rrobots = robots;
 	return 0;
@@ -76,12 +79,13 @@ void robots_destroy(robots_t *robots)
 /** Load robots.
  *
  * @param f File
+ * @param prog Program module
  * @param map Map used by robots
  * @param rrobots Place to store pointer to loaded robots
  *
  * @return Zero on success or error code
  */
-int robots_load(FILE *f, map_t *map, robots_t **rrobots)
+int robots_load(FILE *f, prog_module_t *prog, map_t *map, robots_t **rrobots)
 {
 	robots_t *robots = NULL;
 	robot_t *robot;
@@ -94,12 +98,12 @@ int robots_load(FILE *f, map_t *map, robots_t **rrobots)
 	if (nitem != 1)
 		return EIO;
 
-	rc = robots_create(map, &robots);
+	rc = robots_create(prog, map, &robots);
 	if (rc != 0)
 		return rc;
 
 	for (i = 0; i < nrobots; i++) {
-		rc = robot_load(f, &robot);
+		rc = robot_load(prog, f, &robot);
 		if (rc != 0)
 			goto error;
 
@@ -174,14 +178,20 @@ int robots_add(robots_t *robots, int x, int y)
 {
 	robot_t *oldr;
 	robot_t *robot;
+	rstack_t *rstack;
 	int rc;
 
 	oldr = robots_get(robots, x, y);
 	if (oldr != NULL)
 		return EEXIST;
 
-	rc = robot_create(x, y, dir_south, &robot);
+	rc = rstack_create(robots->prog, &rstack);
+	if (rc != 0)
+		return rc;
+
+	rc = robot_create(x, y, dir_south, rstack, &robot);
 	if (rc != 0) {
+		rstack_destroy(rstack);
 		assert(rc == ENOMEM);
 		return ENOMEM;
 	}

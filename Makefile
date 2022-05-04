@@ -45,6 +45,7 @@ sources = \
 	progview.c \
 	robot.c \
 	robots.c \
+	rstack.c \
 	toolbar.c \
 	vocabed.c \
 	wordlist.c

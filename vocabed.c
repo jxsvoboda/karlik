@@ -275,13 +275,14 @@ static int vocabed_add_proc_verbs(vocabed_t *vocabed)
  * @param map Map
  * @param robots Robots
  * @param prog Program module
+ * @param icondict Icon dictionary
  * @param cb Callbacks
  * @param arg Callback arguments
  * @param rvocabed Place to store pointer to new vocabulary editor
  * @return Zero on success or an error code
  */
 static int vocabed_create(map_t *map, robots_t *robots, prog_module_t *prog,
-    vocabed_cb_t *cb, void *arg, vocabed_t **rvocabed)
+    icondict_t *icondict, vocabed_cb_t *cb, void *arg, vocabed_t **rvocabed)
 {
 	vocabed_t *vocabed;
 	const char **cp;
@@ -292,12 +293,10 @@ static int vocabed_create(map_t *map, robots_t *robots, prog_module_t *prog,
 	if (vocabed == NULL)
 		return ENOMEM;
 
+	vocabed->icondict = icondict;
+
 	rc = gfx_timer_create(prog_step_interval, vocabed_robots_step,
 	    vocabed, &vocabed->robot_timer);
-	if (rc != 0)
-		goto error;
-
-	rc = icondict_create(&vocabed->icondict);
 	if (rc != 0)
 		goto error;
 
@@ -312,7 +311,7 @@ static int vocabed_create(map_t *map, robots_t *robots, prog_module_t *prog,
 	toolbar_set_origin(vocabed->tb, 4, 26);
 	toolbar_set_cb(vocabed->tb, vocabed_toolbar_cb, vocabed);
 
-	rc = progview_create(&vocabed->progview);
+	rc = progview_create(vocabed->icondict, &vocabed->progview);
 	if (rc != 0)
 		goto error;
 
@@ -384,11 +383,18 @@ int vocabed_new(map_t *map, robots_t *robots, prog_module_t *prog,
     vocabed_cb_t *cb, void *arg, vocabed_t **rvocabed)
 {
 	vocabed_t *vocabed;
+	icondict_t *icondict;
 	int rc;
 
-	rc = vocabed_create(map, robots, prog, cb, arg, &vocabed);
+	rc = icondict_create(&icondict);
 	if (rc != 0)
 		return rc;
+
+	rc = vocabed_create(map, robots, prog, icondict, cb, arg, &vocabed);
+	if (rc != 0) {
+		icondict_destroy(icondict);
+		return rc;
+	}
 
 	rc = vocabed_work(vocabed);
 	if (rc != 0) {
@@ -418,6 +424,7 @@ int vocabed_load(map_t *map, robots_t *robots, prog_module_t *prog, FILE *f,
     vocabed_cb_t *cb, void *arg, vocabed_t **rvocabed)
 {
 	vocabed_t *vocabed = NULL;
+	icondict_t *icondict = NULL;
 	char ident[prog_proc_id_len + 1];
 	int nitem;
 	int rc;
@@ -428,15 +435,17 @@ int vocabed_load(map_t *map, robots_t *robots, prog_module_t *prog, FILE *f,
 	unsigned error;
 	prog_proc_t *proc;
 
-	rc = vocabed_create(map, robots, prog, cb, arg, &vocabed);
+	rc = icondict_load(f, &icondict);
+	if (rc != 0)
+		goto error;
+
+	rc = vocabed_create(map, robots, prog, icondict, cb, arg, &vocabed);
 	if (rc != 0) {
 		rc = ENOMEM;
 		goto error;
 	}
 
-	rc = icondict_load(f, &vocabed->icondict);
-	if (rc != 0)
-		goto error;
+	icondict = NULL;
 
 	nitem = fscanf(f, "%u %u %u %u\n", &state, &have_learn_proc, &error,
 	    &have_icon_dialog);
@@ -521,8 +530,8 @@ int vocabed_load(map_t *map, robots_t *robots, prog_module_t *prog, FILE *f,
 	*rvocabed = vocabed;
 	return 0;
 error:
-	if (vocabed->icondict != NULL)
-		icondict_destroy(vocabed->icondict);
+	if (icondict != NULL)
+		icondict_destroy(icondict);
 	if (vocabed != NULL)
 		vocabed_destroy(vocabed);
 	if (map != NULL)
@@ -915,12 +924,34 @@ static void vocabed_verb_destroy(void *arg, void *earg)
 	free(verb);
 }
 
+/** Insert intrinsic statement to procedure that we are learning.
+ *
+ * @param vocabed Vocabulary editor
+ * @param itype Intrinsic type
+ */
 static void vocabed_learn_intrinsic(vocabed_t *vocabed, prog_intr_type_t itype)
 {
 	prog_stmt_t *stmt;
 	int rc;
 
 	rc = prog_stmt_intrinsic_create(itype, &stmt);
+	if (rc != 0)
+		return;
+
+	prog_block_append(vocabed->learn_proc->body, stmt);
+}
+
+/** Insert call statement to procedure that we are learning.
+ *
+ * @param vocabed Vocabulary editor
+ * @param proc Procedure to call
+ */
+static void vocabed_learn_call(vocabed_t *vocabed, prog_proc_t *proc)
+{
+	prog_stmt_t *stmt;
+	int rc;
+
+	rc = prog_stmt_call_create(proc, &stmt);
 	if (rc != 0)
 		return;
 
@@ -959,6 +990,9 @@ static void vocabed_learn_verb_selected(void *arg, void *earg)
 		break;
 	case verb_pick_up:
 		vocabed_learn_intrinsic(vocabed, progin_pick_up);
+		break;
+	case verb_call:
+		vocabed_learn_call(vocabed, verb->v.vcall.proc);
 		break;
 	case verb_end:
 		vocabed_learn_end(vocabed);

@@ -593,6 +593,52 @@ prog_stmt_t *prog_block_prev(prog_stmt_t *cur)
 	return list_get_instance(link, prog_stmt_t, lstmts);
 }
 
+/** Get linear statement index within procedure.
+ *
+ * @param proc Procedure
+ * @param stmt Statement inside procedure (must be inside @a proc)
+ * @return Linear index
+ */
+unsigned prog_proc_get_stmt_index(prog_proc_t *proc, prog_stmt_t *stmt)
+{
+	prog_stmt_t *s;
+	unsigned index;
+
+	index = 0;
+	s = prog_block_first(proc->body);
+
+	while (s != stmt) {
+		++index;
+		s = prog_block_next(s);
+	}
+
+	assert(s == stmt);
+	return index;
+}
+
+/** Find statement in procedure by linear index.
+ *
+ * @pram proc Procedure
+ * @param index Linear index (must be valid)
+ * @return Statement
+ */
+prog_stmt_t *prog_proc_stmt_by_index(prog_proc_t *proc, unsigned index)
+{
+	prog_stmt_t *stmt;
+	unsigned i;
+
+	i = 0;
+	stmt = prog_block_first(proc->body);
+
+	while (i != index) {
+		++i;
+		stmt = prog_block_next(stmt);
+	}
+
+	assert(i == index);
+	return stmt;
+}
+
 /** Create intrinsic statement.
  *
  * @param itype Intrinsic type

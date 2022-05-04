@@ -26,6 +26,7 @@
 #include <SDL.h>
 #include <stdio.h>
 #include "gfx.h"
+#include "icondict.h"
 #include "prog.h"
 
 /** Program view callbacks */
@@ -57,13 +58,15 @@ typedef struct {
 	int margin_y;
 	/** Intrinsic icons */
 	gfx_bmp_t *intr_img[progin_limit];
+	/** Procedure icons */
+	icondict_t *icondict;
 	/** Callbacks */
 	progview_cb_t *cb;
 	/** Callback argument */
 	void *cb_arg;
 } progview_t;
 
-extern int progview_create(progview_t **);
+extern int progview_create(icondict_t *, progview_t **);
 extern void progview_destroy(progview_t *);
 extern void progview_set_orig(progview_t *, int, int);
 extern void progview_set_cb(progview_t *, progview_cb_t *, void *);

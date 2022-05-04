@@ -28,6 +28,7 @@
 #include "adt/list.h"
 #include "dir.h"
 #include "prog.h"
+#include "rstack.h"
 
 /** Robot errors */
 typedef enum {
@@ -59,6 +60,8 @@ typedef struct {
 	prog_stmt_t *cur_stmt;
 	/** Current procedure */
 	prog_proc_t *cur_proc;
+	/** Robot stack */
+	rstack_t *rstack;
 	/** Was robot stopped due to error? */
 	robot_error_t error;
 } robot_t;
@@ -67,9 +70,9 @@ enum {
 	errt_limit = errt_no_tag + 1
 };
 
-extern int robot_create(int, int, dir_t, robot_t **);
+extern int robot_create(int, int, dir_t, rstack_t *, robot_t **);
 extern void robot_destroy(robot_t *);
-extern int robot_load(FILE *, robot_t **);
+extern int robot_load(prog_module_t *, FILE *, robot_t **);
 extern int robot_save(robot_t *, FILE *);
 extern void robot_turn_left(robot_t *);
 extern void robot_move(robot_t *);

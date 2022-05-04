@@ -169,15 +169,15 @@ static int karlik_new(karlik_t *karlik)
 	if (rc != 0)
 		return rc;
 
-	rc = robots_create(karlik->map, &karlik->robots);
+	rc = prog_module_create(&karlik->prog);
+	if (rc != 0)
+		return rc;
+
+	rc = robots_create(karlik->prog, karlik->map, &karlik->robots);
 	if (rc != 0)
 		return rc;
 
 	rc = karlik_robots_setup(karlik);
-	if (rc != 0)
-		return rc;
-
-	rc = prog_module_create(&karlik->prog);
 	if (rc != 0)
 		return rc;
 
@@ -219,15 +219,15 @@ static int karlik_load(karlik_t *karlik)
 	if (rc != 0)
 		return rc;
 
-	rc = robots_load(f, karlik->map, &karlik->robots);
+	rc = prog_module_load(f, &karlik->prog);
+	if (rc != 0)
+		return rc;
+
+	rc = robots_load(f, karlik->prog, karlik->map, &karlik->robots);
 	if (rc != 0)
 		return rc;
 
 	rc = karlik_robots_setup(karlik);
-	if (rc != 0)
-		return rc;
-
-	rc = prog_module_load(f, &karlik->prog);
 	if (rc != 0)
 		return rc;
 
@@ -279,11 +279,11 @@ int karlik_save(karlik_t *karlik)
 	if (rc != 0)
 		goto error;
 
-	rc = robots_save(karlik->robots, f);
+	rc = prog_module_save(karlik->prog, f);
 	if (rc != 0)
 		goto error;
 
-	rc = prog_module_save(karlik->prog, f);
+	rc = robots_save(karlik->robots, f);
 	if (rc != 0)
 		goto error;
 

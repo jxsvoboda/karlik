@@ -151,11 +151,13 @@ icondict_entry_t *icondict_find(icondict_t *icondict, const char *ident)
 {
 	icondict_entry_t *entry;
 
+	printf("icondict_find('%s')\n", ident);
 	entry = icondict_first(icondict);
 	while (entry != NULL) {
+		printf(" .. compare with '%s'\n", entry->ident);
 		if (strcmp(entry->ident, ident) == 0)
 			return entry;
-
+		printf(" .. still nothing\n");
 		entry = icondict_next(entry);
 	}
 

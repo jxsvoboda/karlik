@@ -27,10 +27,13 @@
 #include "adt/list.h"
 #include "gfx.h"
 #include "map.h"
+#include "prog.h"
 #include "robot.h"
 
 /** Robots */
 typedef struct robots {
+	/** Program module used by robots */
+	prog_module_t *prog;
 	/** Map used by robots */
 	map_t *map;
 	/** List of robots (robot_t) in stable, unsorted order */
@@ -51,8 +54,8 @@ typedef struct robots {
 	int rel_y;
 } robots_t;
 
-extern int robots_create(map_t *, robots_t **);
-extern int robots_load(FILE *, map_t *, robots_t **);
+extern int robots_create(prog_module_t *, map_t *, robots_t **);
+extern int robots_load(FILE *, prog_module_t *, map_t *, robots_t **);
 extern int robots_save(robots_t *, FILE *);
 extern void robots_destroy(robots_t *);
 extern int robots_add(robots_t *, int, int);

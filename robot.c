@@ -30,17 +30,20 @@
 #include <stdlib.h>
 #include "dir.h"
 #include "map.h"
+#include "prog.h"
 #include "robot.h"
 #include "robots.h"
+#include "rstack.h"
 
 /** Create new robot.
  *
  * @param x X tile coordinate
  * @param y Y tile coordinate
- * @parma dir Direction robot is facing
+ * @param dir Direction robot is facing
+ * @param rstack Robot stack
  * @param rrobot Place to store pointer to new robot
  */
-int robot_create(int x, int y, dir_t dir, robot_t **rrobot)
+int robot_create(int x, int y, dir_t dir, rstack_t *rstack, robot_t **rrobot)
 {
 	robot_t *robot;
 
@@ -51,6 +54,7 @@ int robot_create(int x, int y, dir_t dir, robot_t **rrobot)
 	robot->x = x;
 	robot->y = y;
 	robot->dir = dir;
+	robot->rstack = rstack;
 	*rrobot = robot;
 	return 0;
 }
@@ -61,35 +65,43 @@ int robot_create(int x, int y, dir_t dir, robot_t **rrobot)
  */
 void robot_destroy(robot_t *robot)
 {
+	rstack_destroy(robot->rstack);
 	free(robot);
 }
 
 /** Load robot.
  *
+ * @param prog Program module
  * @param f File
  * @param rrobot Place to store pointer to loaded robot
  * @return Zero on success or an error code
  */
-int robot_load(FILE *f, robot_t **rrobot)
+int robot_load(prog_module_t *prog, FILE *f, robot_t **rrobot)
 {
 	int nitem;
 	int rc;
 	int x, y, dir;
 	unsigned error;
 	robot_t *robot;
+	rstack_t *rstack;
 
 	nitem = fscanf(f, "%d %d %d %u\n", &x, &y, &dir, &error);
 	if (nitem != 4)
 		return EIO;
 
-	rc = robot_create(x, y, (dir_t)dir, &robot);
+	if (error >= errt_limit)
+		return EIO;
+
+	rc = rstack_load(prog, f, &rstack);
+	if (rc != 0)
+		return rc;
+
+	rc = robot_create(x, y, (dir_t)dir, rstack, &robot);
 	if (rc != 0) {
+		rstack_destroy(rstack);
 		assert(rc == ENOMEM);
 		return ENOMEM;
 	}
-
-	if (error >= errt_limit)
-		return EIO;
 
 	if (error != 0)
 		robot->error = error;
@@ -113,7 +125,7 @@ int robot_save(robot_t *robot, FILE *f)
 	if (rv < 0)
 		return EIO;
 
-	return 0;
+	return rstack_save(robot->rstack, f);
 }
 
 /** Turn robot left.

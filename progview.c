@@ -24,6 +24,7 @@
  * Program view
  */
 
+#include <assert.h>
 #include <errno.h>
 #include <SDL.h>
 #include <stdbool.h>
@@ -48,11 +49,12 @@ static const char *intr_icon_files[] = {
 
 /** Create program view.
  *
+ * @param icondict Icon dictionary
  * @param rprogview Place to store pointer to new program view
  *
  * @return Zero on success or error code
  */
-int progview_create(progview_t **rprogview)
+int progview_create(icondict_t *icondict, progview_t **rprogview)
 {
 	progview_t *progview;
 	int rc;
@@ -69,6 +71,7 @@ int progview_create(progview_t **rprogview)
 			goto error;
 	}
 
+	progview->icondict = icondict;
 	*rprogview = progview;
 	return 0;
 error:
@@ -153,6 +156,8 @@ void progview_draw(progview_t *progview, gfx_t *gfx)
 	int dx, dy;
 	prog_proc_t *proc;
 	prog_stmt_t *stmt;
+	gfx_bmp_t *bmp;
+	icondict_entry_t *entry;
 	uint32_t color;
 
 	proc = progview->proc;
@@ -169,15 +174,24 @@ void progview_draw(progview_t *progview, gfx_t *gfx)
 		dy = progview->orig_y + (1 + y) * progview->margin_y +
 		    y * progview->icon_h;
 
-		if (stmt->stype == progst_intrinsic) {
+		if (stmt->stype == progst_intrinsic || stmt->stype == progst_call) {
+			if (stmt->stype == progst_intrinsic) {
+				bmp = progview->intr_img[stmt->s.sintr.itype];
+			} else {
+				printf("ident='%s'\n",
+				    stmt->s.scall.proc->ident);
+				entry = icondict_find(progview->icondict,
+				    stmt->s.scall.proc->ident);
+				assert(entry != NULL);
+				bmp = entry->icon->bmp;
+			}
 			if (stmt == progview->hgl_stmt) {
 				color = gfx_rgb(gfx, 0, 255, 255);
 				gfx_rect(gfx, dx - 1, dy - 1,
 				    progview->icon_w + 2, progview->icon_h + 2,
 				    color);
 			}
-			gfx_bmp_render(gfx,
-			    progview->intr_img[stmt->s.sintr.itype], dx, dy);
+			gfx_bmp_render(gfx, bmp, dx, dy);
 		}
 
 		++x;
