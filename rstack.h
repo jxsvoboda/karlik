@@ -35,15 +35,20 @@ typedef struct {
 	list_t entries;
 } rstack_t;
 
-/** Robot stack entry */
+/** Robot stack continuation entry
+ *
+ * This entry records at which procedure/statement to continue after
+ * we finish a program block (such as a procedure body, a loop body,
+ * an if/else clause).
+ */
 typedef struct {
 	/** Containing robot stack */
 	rstack_t *rstack;
 	/** Link to @c stack->entries */
 	link_t lentries;
-	/** Calling procedure */
+	/** Continuation procedure */
 	prog_proc_t *caller_proc;
-	/** Calling statement */
+	/** Continuation statement */
 	prog_stmt_t *caller_stmt;
 } rstack_entry_t;
 
@@ -55,7 +60,8 @@ extern rstack_entry_t *rstack_first(rstack_t *);
 extern rstack_entry_t *rstack_next(rstack_entry_t *);
 extern rstack_entry_t *rstack_last(rstack_t *);
 extern rstack_entry_t *rstack_prev(rstack_entry_t *);
-extern int rstack_push_caller(rstack_t *, prog_proc_t *, prog_stmt_t *);
-extern void rstack_pop_caller(rstack_t *, prog_proc_t **, prog_stmt_t **);
+extern int rstack_push_cont(rstack_t *, prog_proc_t *, prog_stmt_t *);
+extern void rstack_pop_cont(rstack_t *, prog_proc_t **, prog_stmt_t **);
+extern int rstack_is_empty(rstack_t *);
 
 #endif

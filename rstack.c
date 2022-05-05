@@ -228,7 +228,7 @@ static int rstack_entry_load(FILE *f, rstack_t *rstack)
 	if (stmt == NULL)
 		return EIO;
 
-	return rstack_push_caller(rstack, proc, stmt);
+	return rstack_push_cont(rstack, proc, stmt);
 }
 
 /** Save robot stack entry.
@@ -267,7 +267,7 @@ static void rstack_entry_destroy(rstack_entry_t *entry)
 	free(entry);
 }
 
-/** Push caller information to robot stack.
+/** Push continuation entry to robot stack.
  *
  * @param rstack Robot stack
  * @param proc Calling procedure
@@ -275,7 +275,7 @@ static void rstack_entry_destroy(rstack_entry_t *entry)
  *
  * @return Zero on success, ENOMEM if out of memory
  */
-int rstack_push_caller(rstack_t *rstack, prog_proc_t *proc, prog_stmt_t *stmt)
+int rstack_push_cont(rstack_t *rstack, prog_proc_t *proc, prog_stmt_t *stmt)
 {
 	rstack_entry_t *entry;
 
@@ -290,13 +290,13 @@ int rstack_push_caller(rstack_t *rstack, prog_proc_t *proc, prog_stmt_t *stmt)
 	return 0;
 }
 
-/** Pop caller information from robot stack.
+/** Pop continuation entry from robot stack.
  *
  * @param rstack Robot stack
  * @param rproc Place to store pointer to calling procedure
  * @param rstmt Place to store pointer to calling statement
  */
-void rstack_pop_caller(rstack_t *rstack, prog_proc_t **rproc,
+void rstack_pop_cont(rstack_t *rstack, prog_proc_t **rproc,
     prog_stmt_t **rstmt)
 {
 	rstack_entry_t *entry;
@@ -307,4 +307,15 @@ void rstack_pop_caller(rstack_t *rstack, prog_proc_t **rproc,
 	*rproc = entry->caller_proc;
 	*rstmt = entry->caller_stmt;
 	rstack_entry_destroy(entry);
+}
+
+/** Pop caller information from robot stack.
+ *
+ * @param rstack Robot stack
+ * @param rproc Place to store pointer to calling procedure
+ * @param rstmt Place to store pointer to calling statement
+ */
+int rstack_is_empty(rstack_t *rstack)
+{
+	return list_empty(&rstack->entries);
 }

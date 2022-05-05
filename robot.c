@@ -283,9 +283,30 @@ void robot_reset(robot_t *robot)
 	robot->cur_stmt = NULL;
 }
 
-/** Step intrinsic statement.
+/** Leave statement block.
  *
- * Steps the next statement, which must be an intrinsic statement.
+ * @param robot Robot
+ */
+static void robot_leave(robot_t *robot)
+{
+	prog_proc_t *next_proc;
+	prog_stmt_t *next_stmt;
+
+	if (rstack_is_empty(robot->rstack)) {
+		robot->cur_proc = NULL;
+		robot->cur_stmt = NULL;
+		return;
+	}
+
+	rstack_pop_cont(robot->rstack, &next_proc, &next_stmt);
+
+	robot->cur_proc = next_proc;
+	robot->cur_stmt = next_stmt;
+}
+
+/** Execute intrinsic statement.
+ *
+ * Executes the next statement, which must be an intrinsic statement.
  * @param robot Robot
  */
 static void robot_stmt_intrinsic(robot_t *robot)
@@ -317,8 +338,43 @@ static void robot_stmt_intrinsic(robot_t *robot)
 		return;
 
 	robot->cur_stmt = prog_block_next(robot->cur_stmt);
-	if (robot->cur_stmt == NULL)
-		robot->cur_proc = NULL;
+	if (robot->cur_stmt == NULL) {
+		/* End of block */
+		robot_leave(robot);
+	}
+}
+
+/** Execeute call statement.
+ *
+ * Executes the next statement, which must be a call statement.
+ * @param robot Robot
+ * @return Zero on success or an error code
+ */
+static int robot_stmt_call(robot_t *robot)
+{
+	prog_stmt_t *scall;
+	prog_stmt_t *snext;
+	int rc;
+
+	scall = robot->cur_stmt;
+	assert(scall->stype == progst_call);
+
+	snext = prog_block_next(scall);
+	if (snext == NULL) {
+		/* Tail call - do nothing */
+	} else {
+		/* Push next statement position */
+		rc = rstack_push_cont(robot->rstack, robot->cur_proc,
+		    snext);
+		if (rc != 0)
+			return rc;
+	}
+
+	/* Set current program position */
+	robot->cur_proc = scall->s.scall.proc;
+	robot->cur_stmt = prog_block_first(robot->cur_proc->body);
+
+	return 0;
 }
 
 /** Advance one step in robot execution.
@@ -328,6 +384,8 @@ static void robot_stmt_intrinsic(robot_t *robot)
  */
 int robot_step(robot_t *robot)
 {
+	int rc = 0;
+
 	if (robot->cur_stmt == NULL)
 		return EINVAL;
 	if (robot->error)
@@ -337,11 +395,14 @@ int robot_step(robot_t *robot)
 	case progst_intrinsic:
 		robot_stmt_intrinsic(robot);
 		break;
+	case progst_call:
+		rc = robot_stmt_call(robot);
+		break;
 	default:
 		return ENOTSUP;
 	}
 
-	return 0;
+	return rc;
 }
 
 /** Return current procedure.
