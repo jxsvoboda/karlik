@@ -164,8 +164,16 @@ void progview_draw(progview_t *progview, gfx_t *gfx)
 	if (proc == NULL)
 		return;
 
+	/* Current procedure icon */
+	entry = icondict_find(progview->icondict, proc->ident);
+	printf("ident='%s' entry=%p\n", proc->ident, entry);
+	if (entry != NULL) {
+		bmp = entry->icon->bmp;
+		gfx_bmp_render(gfx, bmp, progview->orig_x, progview->orig_y);
+	}
+
 	x = 0;
-	y = 0;
+	y = 1;
 
 	stmt = prog_block_first(proc->body);
 	while (stmt != NULL) {

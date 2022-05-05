@@ -875,6 +875,7 @@ static void vocabed_work_verb_selected(void *arg, void *earg)
 	while (robot != NULL) {
 		/* Reset robot before starting new program. */
 		robot_reset(robot);
+		progview_set_proc(vocabed->progview, NULL);
 
 		switch (verb->vtype) {
 		case verb_move:
